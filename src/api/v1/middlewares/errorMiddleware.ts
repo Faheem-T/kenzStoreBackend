@@ -9,23 +9,27 @@ export const errorHandlingMiddleware = (
   next: NextFunction
 ) => {
   if (error instanceof ZodError) {
-    res.status(500).json({
+    const issues = error.issues.map((issue) => ({message: issue.message, field: issue.path[0]}))
+    res.status(400).json({
       success: false,
       name: error.name,
-      issues: error.issues
+      issues
     })
+    console.log(error)
+    console.log(error.issues)
     return;
   }
 
   if (error instanceof mongoose.Error.ValidationError) {
     res.status(500).json({
-      success:false,
+      success: false,
       name: error.name,
       errors: error.errors,
       message: error.message
     })
     console.log("MONGOOSE ERROR")
     console.log(error)
+    return;
   }
 
   res.status(500).json({
