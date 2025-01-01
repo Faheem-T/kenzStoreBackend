@@ -5,3 +5,6 @@ export interface UserType {
   DOB: Date;
   password: string;
 }
+
+// without the password
+export type SafeUserType = Omit<UserType, "password">

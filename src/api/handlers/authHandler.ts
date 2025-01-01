@@ -1,16 +1,53 @@
 import { RequestHandler } from "express-serve-static-core";
 import { User } from "../models/userModel";
-import { hashPassword, validatePassword } from "../../helpers/hashHelper";
+import { hashPassword, validatePassword } from "../helpers/hashHelper";
 import { registerBodyType } from "../types/registerSchema";
 import { loginBodyType } from "../types/loginSchema";
 import {
   generateAccessToken,
   generateRefreshToken,
-} from "../../helpers/jwtHelper";
+  verifyRefreshToken,
+} from "../helpers/jwtHelper";
 import { RefreshToken } from "../models/refreshTokenModel";
 
-export const get_me: RequestHandler = (req, res) => {
-  res.send("hello from handler!!");
+export const getMe: RequestHandler = async (req, res, next) => {
+  const refreshToken = req.cookies.refreshToken;
+  if (!refreshToken) {
+    res.status(400).json({
+      success: false,
+      message: "Refresh token not found",
+    });
+    return;
+  }
+
+  const decoded = verifyRefreshToken(refreshToken);
+  if (!decoded) {
+    res.status(400).json({
+      success: false,
+      message: "Invalid refresh token",
+    });
+    return;
+  }
+
+  const { userId } = decoded;
+
+  // generate access token
+  const accessToken = generateAccessToken(userId);
+
+  // try to get user from DB
+  try {
+    const foundUser = await User.findById(userId, { password: 0 });
+    res.status(200).json({
+      success: true,
+      data: {
+        accessToken,
+        user: foundUser,
+      },
+    });
+  } catch (error) {
+    next(error);
+    return;
+  }
 };
 
 export const postRegister: RequestHandler<any, any, registerBodyType> = async (
@@ -67,17 +104,19 @@ export const postLogin: RequestHandler<any, any, loginBodyType> = async (
     }
 
     // Generate refresh token
-    const refreshToken = generateRefreshToken(foundUser.email, foundUser.id);
+    const refreshToken = generateRefreshToken(foundUser.id);
+    // Decided not to use refresh token collection as Hariprasad (Reviewer)
+    // said that is not necessary
     // Adding refresh token to database
-    try {
-      await RefreshToken.create({ refreshToken, userId: foundUser._id });
-    } catch (error) {
-      next(error);
-      return;
-    }
+    // try {
+    //   await RefreshToken.create({ refreshToken, userId: foundUser._id });
+    // } catch (error) {
+    //   next(error);
+    //   return;
+    // }
 
     // generate access token
-    const accessToken = generateAccessToken(foundUser.email, foundUser.id);
+    const accessToken = generateAccessToken(foundUser.id);
 
     res
       .cookie("refreshToken", refreshToken, {
@@ -99,5 +138,30 @@ export const postLogin: RequestHandler<any, any, loginBodyType> = async (
       });
   } catch (error) {
     next(error);
+  }
+};
+
+// Refresh route
+export const getRefresh: RequestHandler = (req, res, next) => {
+  const refreshToken = req.cookies?.refreshToken;
+  if (!refreshToken) {
+    res.status(400).json({
+      success: false,
+      message: "Refresh token not found",
+    });
+    console.log("refresh token not found");
+    return;
+  }
+  const decoded = verifyRefreshToken(refreshToken);
+  if (decoded) {
+    const accessToken = generateAccessToken(decoded.userId);
+    res.status(200).json({
+      success: true,
+      data: {
+        accessToken,
+      },
+    });
+  } else {
+    res.status(400).send();
   }
 };
