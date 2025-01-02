@@ -107,6 +107,7 @@ export const postLogin: RequestHandler<any, any, loginBodyType> = async (
     const refreshToken = generateRefreshToken(foundUser.id);
     // Decided not to use refresh token collection as Hariprasad (Reviewer)
     // said that is not necessary
+
     // Adding refresh token to database
     // try {
     //   await RefreshToken.create({ refreshToken, userId: foundUser._id });
@@ -165,3 +166,11 @@ export const getRefresh: RequestHandler = (req, res, next) => {
     res.status(400).send();
   }
 };
+
+// logout route
+export const postLogout: RequestHandler = (req, res) => {
+  res.clearCookie("refreshToken", {path: "/"}).status(200).json({
+    success: true,
+    message: "Logged out successfully"
+  })
+}
