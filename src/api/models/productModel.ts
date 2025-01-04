@@ -7,10 +7,12 @@ export const Product = mongoose.model(
       name: String,
       description: String,
       price: Number,
-      quantity: Number,
+      stock: Number,
       listed: Boolean,
       images: [String],
       categories: [{ type: mongoose.Types.ObjectId, ref: "Category" }],
+      isHero: { type: Boolean, default: false },
+      specifications: {type: mongoose.Schema.Types.Mixed, default: {}}
     },
     { timestamps: true }
   )

@@ -1,13 +1,49 @@
-import mongoose from "mongoose";
+import mongoose from 'mongoose';
 
-export const Category = mongoose.model(
-  "category",
-  new mongoose.Schema(
-    {
-      name: String,
-      parentCategory: { type: mongoose.Types.ObjectId, ref: "category" },
-      listed: Boolean,
+const CategorySchema = new mongoose.Schema(
+  {
+    name: {
+      type: String,
+      required: true,
+      trim: true
     },
-    { timestamps: true }
-  )
+    slug: {
+      type: String,
+      unique: true,
+      lowercase: true
+    },
+    description: {
+      type: String,
+      trim: true
+    },
+    parentCategory: {
+      type: mongoose.Types.ObjectId,
+      ref: 'Category',
+      default: null
+    },
+    image: {
+      type: String,
+      default: null
+    },
+    isActive: {
+      type: Boolean,
+      default: true
+    }
+  },
+  { timestamps: true }
 );
+
+// Pre-save middleware on the schema
+CategorySchema.pre('save', function(next) {
+  if (this.isModified('name')) {
+    this.slug = this.name
+      .toLowerCase()
+      .trim()
+      .replace(/[^\w\s-]/g, '')
+      .replace(/[\s_-]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+  }
+  next();
+});
+
+export const Category = mongoose.model("Category", CategorySchema);

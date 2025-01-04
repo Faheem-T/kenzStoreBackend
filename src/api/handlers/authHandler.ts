@@ -37,11 +37,24 @@ export const getMe: RequestHandler = async (req, res, next) => {
   // try to get user from DB
   try {
     const foundUser = await User.findById(userId, { password: 0 });
+    if (!foundUser) {
+      res.status(400).json({
+        success: false,
+        message: "User not found"
+      })
+      return;
+    }
+
     res.status(200).json({
       success: true,
       data: {
         accessToken,
-        user: foundUser,
+        user: {
+          firstName: foundUser.firstName,
+          lastName: foundUser.lastName,
+          email: foundUser.email,
+          id: foundUser._id
+        },
       },
     });
   } catch (error) {
@@ -133,7 +146,9 @@ export const postLogin: RequestHandler<any, any, loginBodyType> = async (
           accessToken,
           user: {
             firstName: foundUser.firstName,
+            lastName: foundUser.lastName,
             email: foundUser.email,
+            id: foundUser._id
           },
         },
       });
@@ -169,7 +184,7 @@ export const getRefresh: RequestHandler = (req, res, next) => {
 
 // logout route
 export const postLogout: RequestHandler = (req, res) => {
-  res.clearCookie("refreshToken", {path: "/"}).status(200).json({
+  res.clearCookie("refreshToken", { path: "/" }).status(200).json({
     success: true,
     message: "Logged out successfully"
   })
