@@ -1,5 +1,6 @@
 import { RequestHandler } from "express";
 import { Product } from "../models/productModel";
+import { populateCategories } from "../helpers/populateCategoriesHelper";
 
 // Fields to be included when sending
 const productProjection = {
@@ -17,7 +18,7 @@ export const getProduct: RequestHandler<{ id: string }> = async (req, res, next)
     const productId = req.params.id
     console.log(productId)
     try {
-        const foundProduct = await Product.findById(productId, productProjection)
+        const foundProduct = await Product.findById(productId, productProjection).populate(populateCategories())
         if (foundProduct) {
             res.status(200).json({
                 success: true,
@@ -37,7 +38,9 @@ export const getProduct: RequestHandler<{ id: string }> = async (req, res, next)
 // get all products
 export const getProducts: RequestHandler = async (req, res, next) => {
     try {
-        const foundProducts = await Product.find({}, productProjection)
+        const foundProducts = await Product
+            .find({}, productProjection)
+        .populate(populateCategories())
         if (foundProducts.length) {
             res.status(200).json({
                 success: true,

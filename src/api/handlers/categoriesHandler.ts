@@ -38,6 +38,7 @@ export const getCategories: RequestHandler = async (req, res, next) => {
 
 export const postCategory: RequestHandler<void, any, postCategoryRequestBodyType> = async (req, res, next) => {
     const { name, parentCategory } = req.body
+
     try {
 
         // TODO check if name already in use
@@ -64,4 +65,18 @@ export const deleteCategory: RequestHandler<{ id: string }> = async (req, res, n
     } catch (error) {
         next(error)
     }
+}
+
+export const updateCategory: RequestHandler = async (req, res, next) => {
+    const categoryId = req.params.id
+    try {
+        const updatedCategory = await Category.findByIdAndUpdate(categoryId, req.body)
+        res.status(200).json({
+            success: true,
+            data: updatedCategory
+        })
+    } catch (error) {
+        next(error)
+    }
+
 }
