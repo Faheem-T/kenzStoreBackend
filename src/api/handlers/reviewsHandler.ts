@@ -26,11 +26,30 @@ export const getProductReviews: RequestHandler<{ productId: string }> = async (r
         return;
     }
 
+
     try {
         const productReviews = await Review.find({ productId })
+
+        if (!productReviews.length) {
+            res.status(400).json({
+                success: false,
+                message: "No reviews found"
+            })
+            return
+        }
+
+        // calculating average rating
+        const ratingsCount = productReviews.length
+        const totalRating = productReviews.reduce((acc, currentReview) => acc + currentReview.rating, 0)
+        const averageRating = totalRating / ratingsCount
+
         res.status(200).json({
             success: true,
-            data: productReviews
+            data: {
+                ratingsCount,
+                averageRating,
+                ...productReviews,
+            }
         })
     } catch (error) {
         next(error)

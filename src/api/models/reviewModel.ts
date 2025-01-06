@@ -6,7 +6,7 @@ export const Review = mongoose.model(
         {
             productId: { type: mongoose.Types.ObjectId, ref: "Product", required: true },
             userId: { type: mongoose.Types.ObjectId, ref: "User", required: true },
-            rating: { type: Number, min: 1, max: 5 },
+            rating: { type: Number, min: 1, max: 5, required: true },
             comment: {
                 type: String,
                 trim: true
