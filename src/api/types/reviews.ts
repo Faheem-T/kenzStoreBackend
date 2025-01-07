@@ -1,3 +1,5 @@
+import { UserType } from "./user";
+
 // SHARED TYPE: Sync with frontend
 export interface ReviewType {
     _id?: string;
@@ -9,4 +11,8 @@ export interface ReviewType {
     verifiedPurchase?: boolean;
     createdAt?: Date;
     updatedAt?: Date;
+}
+
+export interface UserPopulatedReviewType extends Omit<ReviewType, "userId"> {
+    userId: Pick<UserType, "firstName">
 }

@@ -1,6 +1,7 @@
 import { RequestHandler } from "express";
 import { Product } from "../models/productModel";
 import { populateCategories } from "../helpers/populateCategoriesHelper";
+import { CreateProductType, UpdateProductType } from "../types/product";
 
 // Fields to be included when sending
 const productProjection = {
@@ -11,14 +12,19 @@ const productProjection = {
     categories: 1,
     specifications: 1,
     stock: 1,
-    isHero: 1
-}
+    isHero: 1,
+    discountStartDate: 1,
+    discountEndDate: 1,
+    discountValue: 1,
+    discountType: 1
 
+}
+// get a product by its ID
 export const getProduct: RequestHandler<{ id: string }> = async (req, res, next) => {
     const productId = req.params.id
-    console.log(productId)
     try {
         const foundProduct = await Product.findById(productId, productProjection).populate(populateCategories())
+        console.log(foundProduct)
         if (foundProduct) {
             res.status(200).json({
                 success: true,
@@ -35,12 +41,40 @@ export const getProduct: RequestHandler<{ id: string }> = async (req, res, next)
     }
 }
 
+// create a new product
+export const postProduct: RequestHandler<void, any, CreateProductType> = async (req, res, next) => {
+    try {
+        const createdProduct = await Product.create({ ...req.body })
+        res.status(201).json({
+            success: true,
+            data: createdProduct
+        })
+    } catch (error) {
+        next(error)
+    }
+}
+
+// update a product
+export const patchProduct: RequestHandler<{ id: string }, any, UpdateProductType> = async (req, res, next) => {
+    const { id } = req.params
+    try {
+        const updatedProduct = await Product.findByIdAndUpdate(id, { ...req.body })
+        res.status(200).json({
+            success: true,
+            data: updatedProduct
+        })
+    } catch (error) {
+        next(error)
+    }
+
+}
+
 // get all products
 export const getProducts: RequestHandler = async (req, res, next) => {
     try {
         const foundProducts = await Product
             .find({}, productProjection)
-        .populate(populateCategories())
+            .populate(populateCategories())
         if (foundProducts.length) {
             res.status(200).json({
                 success: true,
@@ -59,6 +93,7 @@ export const getProducts: RequestHandler = async (req, res, next) => {
     }
 }
 
+// get all `Hero` products
 export const getHeroProducts: RequestHandler = async (req, res, next) => {
     try {
         const heroProducts = await Product

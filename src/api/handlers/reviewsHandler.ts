@@ -28,7 +28,9 @@ export const getProductReviews: RequestHandler<{ productId: string }> = async (r
 
 
     try {
-        const productReviews = await Review.find({ productId })
+        const productReviews = await Review
+            .find({ productId })
+            .populate("userId", { firstName: 1 })
 
         if (!productReviews.length) {
             res.status(400).json({
@@ -48,7 +50,7 @@ export const getProductReviews: RequestHandler<{ productId: string }> = async (r
             data: {
                 ratingsCount,
                 averageRating,
-                ...productReviews,
+                productReviews,
             }
         })
     } catch (error) {
