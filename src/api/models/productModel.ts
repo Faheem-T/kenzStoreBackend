@@ -19,6 +19,10 @@ const ProductSchema = new mongoose.Schema<IProduct>(
       required: [true, "Product description is required"],
       trim: true
     },
+    brand: {
+      type: String,
+      trim: true
+    },
     price: {
       type: Number,
       required: [true, "Price is required"],
@@ -56,7 +60,22 @@ const ProductSchema = new mongoose.Schema<IProduct>(
       }
     },
     isHero: { type: Boolean, default: false },
-    specifications: { type: mongoose.Schema.Types.Mixed, default: {} },
+
+    // specifications: { type: mongoose.Schema.Types.Mixed, default: {} },
+    specifications: [{
+      name: String,
+      value: String,
+      // unit: String, // unit of measurement for the value
+      category: {
+        type: String,
+        enum: ["technical", "physical", "feature"],
+        required: true
+      },
+      isHighlight: {
+        type: Boolean,
+        default: false
+      }
+    }],
 
     // Discount Related fields
     discountType: {

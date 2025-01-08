@@ -109,3 +109,42 @@ export const getHeroProducts: RequestHandler = async (req, res, next) => {
         next(error)
     }
 }
+
+// get related products
+export const getRelatedProducts: RequestHandler<{ id: string }, any, void, { limit?: string }> = async (req, res, next) => {
+    const { id } = req.params
+    let { limit = 5 } = req.query
+    if (typeof limit === "string") {
+        limit = parseInt(limit, 10)
+    }
+
+    try {
+        const currentProduct = await Product.findById(id)
+        if (!currentProduct) {
+            res.status(404).json({
+                success: false,
+                message: "Product not found"
+            })
+            return
+        }
+        const relatedProducts = await Product
+            .find({
+                _id: { $ne: id },
+                $or: [
+                    { categories: { $in: currentProduct.categories } },
+                    { brand: currentProduct.brand }
+                ]
+            }, productProjection)
+            .limit(limit)
+            .populate("categories")
+            .exec()
+
+        res.status(200).json({
+            success: true,
+            data: relatedProducts
+        })
+
+    } catch (error) {
+        next(error)
+    }
+}

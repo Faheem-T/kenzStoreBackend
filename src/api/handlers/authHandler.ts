@@ -8,7 +8,6 @@ import {
   generateRefreshToken,
   verifyRefreshToken,
 } from "../helpers/jwtHelper";
-import { RefreshToken } from "../models/refreshTokenModel";
 
 export const getMe: RequestHandler = async (req, res, next) => {
   const refreshToken = req.cookies.refreshToken;
