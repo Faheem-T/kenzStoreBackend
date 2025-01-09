@@ -5,9 +5,13 @@ import { registerBodyType } from "../types/registerSchema";
 import { loginBodyType } from "../types/loginSchema";
 import {
   generateAccessToken,
+  generateAdminAccessToken,
   generateRefreshToken,
+  REFRESH_MAX_AGE,
+  verifyAdminRefreshToken,
   verifyRefreshToken,
 } from "../helpers/jwtHelper";
+import { Admin } from "../models/adminModel";
 
 export const getMe: RequestHandler = async (req, res, next) => {
   const refreshToken = req.cookies.refreshToken;
@@ -19,43 +23,81 @@ export const getMe: RequestHandler = async (req, res, next) => {
     return;
   }
 
-  const decoded = verifyRefreshToken(refreshToken);
+  let isAdmin = false;
+  let id;
+  let decoded
+  decoded = verifyRefreshToken(refreshToken);
+  console.log("Refresh Token", refreshToken);
+  console.log("Decoded: ", decoded);
   if (!decoded) {
-    res.status(400).json({
-      success: false,
-      message: "Invalid refresh token",
-    });
-    return;
-  }
-
-  const { userId } = decoded;
-
-  // generate access token
-  const accessToken = generateAccessToken(userId);
-
-  // try to get user from DB
-  try {
-    const foundUser = await User.findById(userId, { password: 0 });
-    if (!foundUser) {
+    // checking if admin
+    decoded = verifyAdminRefreshToken(refreshToken);
+    console.log("admin Decoded:", decoded);
+    if (!decoded) {
       res.status(400).json({
         success: false,
-        message: "User not found"
-      })
+        message: "Invalid refresh token",
+      });
       return;
     }
 
-    res.status(200).json({
-      success: true,
-      data: {
-        accessToken,
-        user: {
-          firstName: foundUser.firstName,
-          lastName: foundUser.lastName,
-          email: foundUser.email,
-          id: foundUser._id
+    id = decoded.adminId;
+    isAdmin = true;
+  } else {
+    id = decoded.userId;
+  }
+
+  // try to get user from DB
+  try {
+    if (!isAdmin) {
+      // generate access token
+      const accessToken = generateAccessToken(id);
+      const foundUser = await User.findById(id, { password: 0 });
+      if (!foundUser) {
+        res.status(400).json({
+          success: false,
+          message: "User not found",
+        });
+        return;
+      }
+
+      res.status(200).json({
+        success: true,
+        data: {
+          accessToken,
+          user: {
+            firstName: foundUser.firstName,
+            lastName: foundUser.lastName,
+            email: foundUser.email,
+            id: foundUser.id,
+          },
+          isAdmin: false,
         },
-      },
-    });
+      });
+    } else {
+      // generate admin access token
+      const accessToken = generateAdminAccessToken(id);
+      const foundAdmin = await Admin.findById(id, { password: 0 });
+      if (!foundAdmin) {
+        res.status(400).json({
+          success: false,
+          message: "Admin not found",
+        });
+        return;
+      }
+
+      res.status(200).json({
+        success: true,
+        data: {
+          accessToken,
+          user: {
+            id: foundAdmin.id,
+            username: foundAdmin.username,
+          },
+          isAdmin: true,
+        },
+      });
+    }
   } catch (error) {
     next(error);
     return;
@@ -137,6 +179,7 @@ export const postLogin: RequestHandler<any, any, loginBodyType> = async (
         secure: process.env.NODE_ENV === "production",
         sameSite: "strict",
         path: "/",
+        maxAge: REFRESH_MAX_AGE * 1000 // since maxAge considers the values as milliseconds
       })
       .status(200)
       .json({
@@ -147,7 +190,7 @@ export const postLogin: RequestHandler<any, any, loginBodyType> = async (
             firstName: foundUser.firstName,
             lastName: foundUser.lastName,
             email: foundUser.email,
-            id: foundUser._id
+            id: foundUser._id,
           },
         },
       });
@@ -185,6 +228,6 @@ export const getRefresh: RequestHandler = (req, res, next) => {
 export const postLogout: RequestHandler = (req, res) => {
   res.clearCookie("refreshToken", { path: "/" }).status(200).json({
     success: true,
-    message: "Logged out successfully"
-  })
-}
+    message: "Logged out successfully",
+  });
+};

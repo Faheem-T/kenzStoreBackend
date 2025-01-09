@@ -17,7 +17,6 @@ const productProjection = {
     discountEndDate: 1,
     discountValue: 1,
     discountType: 1
-
 }
 // get a product by its ID
 export const getProduct: RequestHandler<{ id: string }> = async (req, res, next) => {
@@ -70,10 +69,38 @@ export const patchProduct: RequestHandler<{ id: string }, any, UpdateProductType
 }
 
 // get all products
-export const getProducts: RequestHandler = async (req, res, next) => {
+export const getProducts: RequestHandler<void, any, any, { page: string, sort: string, sortBy: string, limit: string, filterField: string }> = async (req, res, next) => {
+    const { page = "1", sort = "asc", limit = "10", filterField, sortBy = "createdAt" } = req.query
+
+    const pageNum = parseInt(page, 10);
+    const limitNum = parseInt(limit, 10)
+    const sortOrder = sort === "asc" ? 1 : -1
+
+    // Validate parsed parameters
+    if (isNaN(pageNum) || isNaN(limitNum) || pageNum < 1 || limitNum < 1) {
+        res.status(400).json({
+            success: false,
+            message: "Invalid pagination parameters",
+        });
+        return;
+    }
+
+    // Whitelist of fields allowed for sorting
+    const validSortFields = ["createdAt", "price", "name"]; // Update based on your schema
+    if (!validSortFields.includes(sortBy)) {
+        res.status(400).json({
+            success: false,
+            message: `Invalid sortBy Field. Allowed fields are: ${validSortFields.join(", ")}`,
+        });
+        return
+    }
+
     try {
         const foundProducts = await Product
-            .find({}, productProjection)
+            .find({})
+            .sort({ [sortBy]: sortOrder })
+            .skip((pageNum - 1) * limitNum)
+            .limit(limitNum)
             .populate(populateCategories())
         if (foundProducts.length) {
             res.status(200).json({

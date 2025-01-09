@@ -5,10 +5,10 @@ import {
   postLogin,
   postRegister,
   postLogout
-} from "../handlers/authHandler";
+} from "../handlers/userAuthHandler";
 import { validateRegisterMiddleware } from "../middlewares/validateRegisterMiddleware";
 
-export const authRouter = Router()
+export const userAuthRouter = Router()
   .get("/me", getMe)
   .post("/register", validateRegisterMiddleware, postRegister)
   .post("/login", postLogin)

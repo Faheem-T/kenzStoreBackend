@@ -6,3 +6,4 @@ export interface postCategoryRequestBodyType {
 }
 
 export type postProductReviewBodyType = Pick<ReviewType, "userId" | "comment" | "rating">
+
