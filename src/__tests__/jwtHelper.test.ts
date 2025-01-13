@@ -1,4 +1,7 @@
-import { generateAdminRefreshToken, verifyAdminRefreshToken } from "../api/helpers/jwtHelper";
+import {
+  generateAdminRefreshToken,
+  verifyAdminRefreshToken,
+} from "../api/utils/jwtHelper";
 
 // test("Generates refresh token", () => {
 //     expect(generateAdminRefreshToken("SomeId")).toBe("String")

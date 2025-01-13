@@ -1,6 +1,6 @@
 import { RequestHandler } from "express";
 import { Category } from "../models/categoryModel";
-import { populateCategories } from "../helpers/populateCategoriesHelper";
+import { populateCategories } from "../utils/populateCategoriesHelper";
 import { UpdateCategoryType } from "../types/categories";
 
 const categoryProjection = {

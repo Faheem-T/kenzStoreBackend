@@ -1,6 +1,6 @@
 import { RequestHandler } from "express";
 import { Product } from "../models/productModel";
-import { populateCategories } from "../helpers/populateCategoriesHelper";
+import { populateCategories } from "../utils/populateCategoriesHelper";
 import { CreateProductType, UpdateProductType } from "../types/product";
 
 // Fields to be included when sending

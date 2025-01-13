@@ -3,7 +3,7 @@ import { ProductType } from "../types/product";
 import {
   calculateDiscount,
   calculateDiscountActive,
-} from "../helpers/calculateDiscount";
+} from "../utils/calculateDiscount";
 import { Document } from "mongoose";
 
 type IProduct = Document & ProductType;

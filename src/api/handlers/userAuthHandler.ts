@@ -1,6 +1,6 @@
 import { RequestHandler } from "express-serve-static-core";
 import { User } from "../models/userModel";
-import { hashPassword, validatePassword } from "../helpers/hashHelper";
+import { hashPassword, validatePassword } from "../utils/hashHelper";
 import { registerBodyType } from "../types/registerSchema";
 import { loginBodyType } from "../types/loginSchema";
 import {
@@ -10,7 +10,7 @@ import {
   REFRESH_MAX_AGE,
   verifyAdminRefreshToken,
   verifyRefreshToken,
-} from "../helpers/jwtHelper";
+} from "../utils/jwtHelper";
 import { Admin } from "../models/adminModel";
 
 export const getMe: RequestHandler = async (req, res, next) => {
@@ -25,7 +25,7 @@ export const getMe: RequestHandler = async (req, res, next) => {
 
   let isAdmin = false;
   let id;
-  let decoded
+  let decoded;
   decoded = verifyRefreshToken(refreshToken);
   console.log("Refresh Token", refreshToken);
   console.log("Decoded: ", decoded);
@@ -179,7 +179,7 @@ export const postLogin: RequestHandler<any, any, loginBodyType> = async (
         secure: process.env.NODE_ENV === "production",
         sameSite: "strict",
         path: "/",
-        maxAge: REFRESH_MAX_AGE * 1000 // since maxAge considers the values as milliseconds
+        maxAge: REFRESH_MAX_AGE * 1000, // since maxAge considers the values as milliseconds
       })
       .status(200)
       .json({
