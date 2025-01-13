@@ -22,6 +22,7 @@ export const getCategory: RequestHandler<{ id: string }> = async (
       categoryId,
       categoryProjection
     );
+    // TODO check if `isDeleted` is true
     res.status(200).json({
       success: true,
       data: foundCategory,
@@ -35,7 +36,7 @@ export const getCategory: RequestHandler<{ id: string }> = async (
 export const getCategories: RequestHandler = async (req, res, next) => {
   try {
     const foundCategories = await Category.find(
-      {},
+      { isDeleted: { $ne: true } },
       categoryProjection
     ).populate(populateCategories(1, "parentCategory"));
     res.status(200).json({
@@ -74,8 +75,13 @@ export const deleteCategory: RequestHandler<{ id: string }> = async (
 ) => {
   const categoryId = req.params.id;
   try {
-    const result = await Category.findByIdAndDelete(categoryId);
-    console.log("Deleted Category", result);
+    // const result = await Category.findByIdAndDelete(categoryId);
+
+    // soft deletion
+    await Category.findByIdAndUpdate(categoryId, {
+      isDeleted: true,
+      isActive: false,
+    });
     res.status(200).json({
       success: true,
       message: "Category Deleted",

@@ -1,47 +1,54 @@
-import mongoose from 'mongoose';
+import mongoose, { Document } from "mongoose";
+import { CategoryType } from "../types/categories";
 
-const CategorySchema = new mongoose.Schema(
+type ICategory = Document & CategoryType;
+
+const CategorySchema = new mongoose.Schema<ICategory>(
   {
     name: {
       type: String,
       required: true,
-      trim: true
+      trim: true,
     },
     slug: {
       type: String,
       unique: true,
-      lowercase: true
+      lowercase: true,
     },
     description: {
       type: String,
-      trim: true
+      trim: true,
     },
     parentCategory: {
       type: mongoose.Types.ObjectId,
-      ref: 'Category',
-      default: null
+      ref: "Category",
+      default: null,
     },
     image: {
       type: String,
-      default: null
+      default: null,
     },
     isActive: {
       type: Boolean,
-      default: true
-    }
+      default: true,
+    },
+    isDeleted: {
+      type: Boolean,
+      default: false,
+    },
   },
   { timestamps: true }
 );
 
 // Pre-save middleware on the schema
-CategorySchema.pre('save', function(next) {
-  if (this.isModified('name')) {
+CategorySchema.pre("save", function (next) {
+  if (this.isModified("name")) {
     this.slug = this.name
       .toLowerCase()
       .trim()
-      .replace(/[^\w\s-]/g, '')
-      .replace(/[\s_-]+/g, '-')
-      .replace(/^-+|-+$/g, '');
+      .replace(/[^\w\s-]/g, "")
+      .replace(/[\s_-]+/g, "-")
+      .replace(/^-+|-+$/g, "");
   }
   next();
 });
