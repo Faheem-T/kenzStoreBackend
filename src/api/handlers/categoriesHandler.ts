@@ -1,11 +1,12 @@
 import { RequestHandler } from "express";
 import { Category } from "../models/categoryModel";
-import { postCategoryRequestBodyType } from "../types/requestBodyTypes";
 import { populateCategories } from "../helpers/populateCategoriesHelper";
+import { UpdateCategoryType } from "../types/categories";
 
 const categoryProjection = {
   name: 1,
   parentCategory: 1,
+  description: 1,
   listed: 1,
   createdAt: 1,
   updatedAt: 1,
@@ -21,7 +22,7 @@ export const getCategory: RequestHandler<{ id: string }> = async (
     const foundCategory = await Category.findById(
       categoryId,
       categoryProjection
-    );
+    ).populate(populateCategories(1, "parentCategory"));
     // TODO check if `isDeleted` is true
     res.status(200).json({
       success: true,
@@ -51,14 +52,12 @@ export const getCategories: RequestHandler = async (req, res, next) => {
 export const postCategory: RequestHandler<
   void,
   any,
-  postCategoryRequestBodyType
+  UpdateCategoryType
 > = async (req, res, next) => {
-  const { name, parentCategory } = req.body;
-
   try {
     // TODO check if name already in use
 
-    const createdCategory = await Category.create({ name, parentCategory });
+    const createdCategory = await Category.create(req.body);
     res.status(201).json({
       success: true,
       data: createdCategory,
