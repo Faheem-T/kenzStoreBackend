@@ -24,6 +24,7 @@ export const getCategory: RequestHandler<{ id: string }> = async (req, res, next
     }
 }
 
+// Find all categories
 export const getCategories: RequestHandler = async (req, res, next) => {
     try {
         const foundCategories = await Category.find({}, categoryProjection)

@@ -1,10 +1,12 @@
 import mongoose from "mongoose";
 import { ProductType } from "../types/product";
-import { calculateDiscount, calculateDiscountActive } from "../helpers/calculateDiscount";
+import {
+  calculateDiscount,
+  calculateDiscountActive,
+} from "../helpers/calculateDiscount";
 import { Document } from "mongoose";
 
 type IProduct = Document & ProductType;
-
 
 const ProductSchema = new mongoose.Schema<IProduct>(
   {
@@ -12,78 +14,82 @@ const ProductSchema = new mongoose.Schema<IProduct>(
       type: String,
       required: [true, "Product name is required"],
       trim: true,
-      minlength: [2, "Product name must be at least 2 characters"]
+      minlength: [2, "Product name must be at least 2 characters"],
     },
     description: {
       type: String,
       required: [true, "Product description is required"],
-      trim: true
+      trim: true,
     },
     brand: {
       type: String,
-      trim: true
+      trim: true,
     },
     price: {
       type: Number,
       required: [true, "Price is required"],
-      min: [0, "Price cannot be negative"]
+      min: [0, "Price cannot be negative"],
     },
     stock: {
       type: Number,
       required: [true, "Stock quantity is required"],
       min: [0, "Stock cannot be negative"],
-      default: 0
+      default: 0,
     },
     listed: {
       type: Boolean,
-      default: true  // Most products will be listed by default
+      default: true, // Most products will be listed by default
     },
     images: {
       type: [String],
       validate: {
         validator: function (v) {
-          return v.length > 0;  // Ensure at least one image
+          return v.length > 0; // Ensure at least one image
         },
-        message: "Product must have at least one image"
-      }
+        message: "Product must have at least one image",
+      },
     },
     categories: {
-      type: [{
-        type: mongoose.Types.ObjectId,
-        ref: "Category"
-      }],
+      type: [
+        {
+          type: mongoose.Types.ObjectId,
+          ref: "Category",
+        },
+      ],
       validate: {
         validator: function (v) {
-          return v.length > 0;  // Ensure at least one category
+          return v.length > 0; // Ensure at least one category
         },
-        message: "Product must belong to at least one category"
-      }
+        message: "Product must belong to at least one category",
+      },
     },
     isHero: { type: Boolean, default: false },
 
     // specifications: { type: mongoose.Schema.Types.Mixed, default: {} },
-    specifications: [{
-      name: String,
-      value: String,
-      // unit: String, // unit of measurement for the value
-      category: {
-        type: String,
-        enum: ["technical", "physical", "feature"],
-        required: true
+    specifications: [
+      {
+        name: String,
+        value: String,
+        // unit: String, // unit of measurement for the value
+        category: {
+          type: String,
+          enum: ["technical", "physical", "feature"],
+          required: true,
+        },
+        isHighlight: {
+          type: Boolean,
+          default: false,
+        },
       },
-      isHighlight: {
-        type: Boolean,
-        default: false
-      }
-    }],
+    ],
 
     // Discount Related fields
     discountType: {
       type: String,
       enum: {
         values: ["percentage", "fixed"],
-        message: "Discount type must be either 'percentage' or 'fixed'"
-      }
+        message: "Discount type must be either 'percentage' or 'fixed'",
+      },
     },
     discountValue: {
       type: Number,
@@ -100,8 +106,8 @@ const ProductSchema = new mongoose.Schema<IProduct>(
           }
           return true;
         },
-        message: "Invalid discount value"
-      }
+        message: "Invalid discount value",
+      },
     },
     discountStartDate: {
       type: Date,
@@ -110,8 +116,8 @@ const ProductSchema = new mongoose.Schema<IProduct>(
           // Start date must be present if discount type is set
           return !this.discountType || v != null;
         },
-        message: "Start date is required when setting a discount"
-      }
+        message: "Start date is required when setting a discount",
+      },
     },
     discountEndDate: {
       type: Date,
@@ -120,31 +126,40 @@ const ProductSchema = new mongoose.Schema<IProduct>(
           // End date must be after start date
           return !this.discountStartDate || v > this.discountStartDate;
         },
-        message: "End date must be after start date"
-      }
-    }
+        message: "End date must be after start date",
+      },
+    },
+    // For soft deletion
+    isDeleted: {
+      type: Boolean,
+      default: false,
+    },
   },
   {
     timestamps: true,
     // Enable virtuals when converting to JSON/Object
     toJSON: { virtuals: true },
-    toObject: { virtuals: true }
+    toObject: { virtuals: true },
   }
-)
+);
 
 ProductSchema.virtual("isDiscountActive").get(function () {
-  const { discountStartDate, discountEndDate } = this
+  const { discountStartDate, discountEndDate } = this;
   if (!discountStartDate || !discountEndDate) {
-    return false
+    return false;
   }
-  return calculateDiscountActive({ discountEndDate, discountStartDate })
-})
+  return calculateDiscountActive({ discountEndDate, discountStartDate });
+});
 
 ProductSchema.virtual("finalPrice").get(function () {
   if (!this.discountType || !this.discountValue || !this.isDiscountActive) {
-    return this.price
+    return this.price;
   }
-  return calculateDiscount({ price: this.price, discountType: this.discountType, discountValue: this.discountValue })
-})
+  return calculateDiscount({
+    price: this.price,
+    discountType: this.discountType,
+    discountValue: this.discountValue,
+  });
+});
 
 export const Product = mongoose.model("Product", ProductSchema);

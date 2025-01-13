@@ -13,6 +13,7 @@ export interface ReviewType {
     updatedAt?: Date;
 }
 
+// SHARED TYPE: Sync with frontend
 export interface UserPopulatedReviewType extends Omit<ReviewType, "userId"> {
     userId: Pick<UserType, "firstName">
 }
