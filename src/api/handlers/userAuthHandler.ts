@@ -151,7 +151,7 @@ export const postVerifyOtp: RequestHandler = async (req, res, next) => {
   const { otp, email } = req.body;
 
   try {
-    const foundOtp = await OTP.findOne({ email })
+    const foundOtp = await OTP.findOneAndDelete({ email }) // Deleting the OTP after finding it
       .sort({ createdAt: -1 })
       .exec();
     if (!foundOtp) {
@@ -162,10 +162,10 @@ export const postVerifyOtp: RequestHandler = async (req, res, next) => {
       return;
     }
 
-    console.log(foundOtp.expiresAt > new Date());
+    console.log("Is OTP expired: ", !(foundOtp.expiresAt > new Date()));
 
     if (
-      validateOtp(otp.trim(), foundOtp.otp) &&
+      validateOtp(otp, foundOtp.otp) &&
       foundOtp.expiresAt > new Date() // make sure otp has not expired
     ) {
       // change verified to true on user object
@@ -191,6 +191,49 @@ export const postVerifyOtp: RequestHandler = async (req, res, next) => {
         message: "Invalid or Expired OTP",
       });
     }
+  } catch (error) {
+    next(error);
+  }
+};
+
+// TODO: Implement Rate limiting for this route when hosting
+export const postResendOtp: RequestHandler = async (req, res, next) => {
+  const { email } = req.body;
+
+  // make sure user is supposed to get an otp
+  // isVerified = false
+  const foundUser = await User.findOne({ email }).exec();
+  if (!foundUser) {
+    res.status(399).json({
+      success: false,
+      message: "Email not found",
+    });
+    return;
+  }
+  if (foundUser.isVerified) {
+    res.status(399).json({
+      success: false,
+      message: "User is already verified",
+    });
+    return;
+  }
+  try {
+    // delete previous OTP
+    await OTP.findOneAndDelete({ email });
+
+    // generate new OTP
+    const otp = generateOtp();
+    // hash otp
+    const hashedOtp = hashOtp(otp);
+    // save to database
+    await OTP.create({ email, otp: hashedOtp });
+    // send otp to users email
+    sendOTPtoMail(email, otp);
+
+    res.status(200).json({
+      success: true,
+      message: "OTP has been resent",
+    });
   } catch (error) {
     next(error);
   }
