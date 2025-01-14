@@ -1,6 +1,11 @@
 import { RequestHandler } from "express-serve-static-core";
 import { User } from "../models/userModel";
-import { hashPassword, validatePassword } from "../utils/hashHelper";
+import {
+  hashOtp,
+  hashPassword,
+  validateOtp,
+  validatePassword,
+} from "../utils/hashHelper";
 import { registerBodyType } from "../types/registerSchema";
 import { loginBodyType } from "../types/loginSchema";
 import {
@@ -12,6 +17,8 @@ import {
   verifyRefreshToken,
 } from "../utils/jwtHelper";
 import { Admin } from "../models/adminModel";
+import { generateOtp, sendOTPtoMail } from "../utils/nodeMailer";
+import { OTP } from "../models/otpModel";
 
 export const getMe: RequestHandler = async (req, res, next) => {
   const refreshToken = req.cookies.refreshToken;
@@ -122,10 +129,71 @@ export const postRegister: RequestHandler<any, any, registerBodyType> = async (
     return next(error);
   }
 
+  const otp = generateOtp();
+
+  // save otp to database
+  try {
+    const hashedOtp = hashOtp(otp);
+    await OTP.create({ otp: hashedOtp, email: req.body.email });
+  } catch (error) {
+    return next(error);
+  }
+
+  sendOTPtoMail(req.body.email, otp);
+
   res.status(201).json({
     success: true,
-    data: newUser,
+    message: "An OTP has been sent to your email",
   });
+};
+
+export const postVerifyOtp: RequestHandler = async (req, res, next) => {
+  const { otp, email } = req.body;
+
+  try {
+    const foundOtp = await OTP.findOne({ email })
+      .sort({ createdAt: -1 })
+      .exec();
+    if (!foundOtp) {
+      res.status(400).json({
+        success: false,
+        message: "Wrong email",
+      });
+      return;
+    }
+
+    console.log(foundOtp.expiresAt > new Date());
+
+    if (
+      validateOtp(otp.trim(), foundOtp.otp) &&
+      foundOtp.expiresAt > new Date() // make sure otp has not expired
+    ) {
+      // change verified to true on user object
+      const updatedUser = await User.findOneAndUpdate(
+        { email, expiresAt: { $gt: new Date(Date.now()) } },
+        { isVerified: true, expiresAt: null }
+      );
+      // make sure user has not expired
+      if (!updatedUser) {
+        res.status(400).json({
+          success: false,
+          message: "Registration time exceeded. Please register again.",
+        });
+        return;
+      }
+      res.status(200).json({
+        success: true,
+        message: "Email has been verified successfully! You may Log In now.",
+      });
+    } else {
+      res.status(400).json({
+        success: false,
+        message: "Invalid or Expired OTP",
+      });
+    }
+  } catch (error) {
+    next(error);
+  }
 };
 
 export const postLogin: RequestHandler<any, any, loginBodyType> = async (
@@ -153,6 +221,15 @@ export const postLogin: RequestHandler<any, any, loginBodyType> = async (
       res.status(400).json({
         success: false,
         message: "Wrong password",
+      });
+      return;
+    }
+
+    // check if user has been verified
+    if (!foundUser.isVerified) {
+      res.status(400).json({
+        success: false,
+        message: "Your email has not been verified.",
       });
       return;
     }

@@ -5,10 +5,14 @@ export interface UserType {
   email: string;
   DOB: Date;
   password: string;
+  // user verification fields
+  expiresAt: Date;
+  isVerified: boolean;
+  // timestamp fields
   createdAt: Date;
-  updatedAt: Date
+  updatedAt: Date;
 }
 
 // SHARED TYPE: Sync with frontend
 // without the password
-export type SafeUserType = Omit<UserType, "password">
+export type SafeUserType = Omit<UserType, "password">;

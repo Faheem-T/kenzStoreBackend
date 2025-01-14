@@ -1,7 +1,9 @@
 import mongoose from "mongoose";
 import { UserType } from "../types/user";
 
-const userSchema = new mongoose.Schema(
+export type IUser = UserType & mongoose.Document;
+
+const userSchema = new mongoose.Schema<IUser>(
   {
     firstName: {
       type: String,
@@ -12,11 +14,21 @@ const userSchema = new mongoose.Schema(
     DOB: { type: Date },
     password: {
       type: String,
+      required: true,
+    },
+    isVerified: {
+      type: Boolean,
+      default: false,
+    },
+    expiresAt: {
+      type: Date,
+      default: () => new Date(Date.now() + 24 * 60 * 60 * 1000), // expires 24 hours from creation
+      // default: () => new Date(Date.now() + 1000 * 10),
     },
   },
   { timestamps: true }
 );
 
-export type IUser = UserType & mongoose.Document;
+userSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 }); // Delete immediately after expiry
 
-export const User = mongoose.model<IUser>("User", userSchema);
+export const User = mongoose.model("User", userSchema);
