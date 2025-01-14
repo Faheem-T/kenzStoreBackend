@@ -277,6 +277,15 @@ export const postLogin: RequestHandler<any, any, loginBodyType> = async (
       return;
     }
 
+    // check if user has been blocked
+    if (foundUser.isBlocked) {
+      res.status(400).json({
+        success: false,
+        message: "You are currently blocked",
+      });
+      return;
+    }
+
     // Generate refresh token
     const refreshToken = generateRefreshToken(foundUser.id);
     // Decided not to use refresh token collection as Hariprasad (Reviewer)

@@ -101,6 +101,8 @@ export const getAdminRefresh: RequestHandler = (req, res, next) => {
   const accessToken = generateAdminAccessToken(adminId);
   res.status(200).json({
     success: "true",
-    data: accessToken,
+    data: {
+      accessToken,
+    },
   });
 };

@@ -1,5 +1,6 @@
 // SHARED TYPE: Sync with frontend
 export interface UserType {
+  _id: string;
   firstName: string;
   lastName: string;
   email: string;
@@ -8,6 +9,7 @@ export interface UserType {
   // user verification fields
   expiresAt: Date;
   isVerified: boolean;
+  isBlocked: boolean;
   // timestamp fields
   createdAt: Date;
   updatedAt: Date;

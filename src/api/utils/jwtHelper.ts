@@ -21,6 +21,8 @@ const ADMIN_ACCESS_SECRET = process.env.JWT_ADMIN_ACCESS_SECRET;
 
 export const REFRESH_MAX_AGE = 60 * 60 * 24 * 15; // 15 Days (This variable is also used in auth handler)
 export const ACCESS_MAX_AGE = 60 * 5; // 5 minutes
+// export const ACCESS_MAX_AGE = 60 * 1; // 1 minutes
+// export const ACCESS_MAX_AGE = 5; // 5 seconds
 
 if (
   !REFRESH_SECRET ||

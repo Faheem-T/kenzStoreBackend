@@ -23,7 +23,10 @@ const userSchema = new mongoose.Schema<IUser>(
     expiresAt: {
       type: Date,
       default: () => new Date(Date.now() + 24 * 60 * 60 * 1000), // expires 24 hours from creation
-      // default: () => new Date(Date.now() + 1000 * 10),
+    },
+    isBlocked: {
+      type: Boolean,
+      default: false,
     },
   },
   { timestamps: true }

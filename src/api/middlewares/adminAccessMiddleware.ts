@@ -13,5 +13,10 @@ export const adminAccessMiddleware: RequestHandler = (req, res, next) => {
   }
   if (verifyAdminAccessToken(accessToken)) {
     next();
+  } else {
+    res.status(401).json({
+      success: false,
+      message: "Invalid/Expired access token",
+    });
   }
 };
