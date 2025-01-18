@@ -1,7 +1,11 @@
 import { Router } from "express";
-import { getProductReviews, getReview, postProductReview } from "../handlers/reviewsHandler";
+import {
+  getProductReviews,
+  getReview,
+  postProductReview,
+} from "../controllers/reviewsController";
 
 export const reviewsRouter = Router()
-    .get("/:id", getReview)
-    .get("/product/:productId", getProductReviews)
-.post("/product/:productId", postProductReview)
+  .get("/:id", getReview)
+  .get("/product/:productId", getProductReviews)
+  .post("/product/:productId", postProductReview);

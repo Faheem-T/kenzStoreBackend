@@ -3,7 +3,7 @@ import {
   getUsers,
   getUser,
   patchToggleBlockUser,
-} from "../handlers/userManagementHandler";
+} from "../../controllers/userManagementController";
 
 export const userManagementRouter = Router()
   .get("/", getUsers)

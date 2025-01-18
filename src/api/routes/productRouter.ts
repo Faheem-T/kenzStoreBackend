@@ -7,7 +7,7 @@ import {
   getRelatedProducts,
   patchProduct,
   postProduct,
-} from "../handlers/productHandler";
+} from "../controllers/productController";
 
 export const productsRouter = Router()
   .get("/hero", getHeroProducts)

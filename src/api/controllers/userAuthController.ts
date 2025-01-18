@@ -34,12 +34,9 @@ export const getMe: RequestHandler = async (req, res, next) => {
   let id;
   let decoded;
   decoded = verifyRefreshToken(refreshToken);
-  console.log("Refresh Token", refreshToken);
-  console.log("Decoded: ", decoded);
   if (!decoded) {
     // checking if admin
     decoded = verifyAdminRefreshToken(refreshToken);
-    console.log("admin Decoded:", decoded);
     if (!decoded) {
       res.status(400).json({
         success: false,
@@ -73,6 +70,7 @@ export const getMe: RequestHandler = async (req, res, next) => {
         data: {
           accessToken,
           user: {
+            _id: foundUser._id,
             firstName: foundUser.firstName,
             lastName: foundUser.lastName,
             email: foundUser.email,
@@ -162,8 +160,6 @@ export const postVerifyOtp: RequestHandler = async (req, res, next) => {
       return;
     }
 
-    console.log("Is OTP expired: ", !(foundOtp.expiresAt > new Date()));
-
     if (
       validateOtp(otp, foundOtp.otp) &&
       foundOtp.expiresAt > new Date() // make sure otp has not expired
@@ -247,8 +243,6 @@ export const postLogin: RequestHandler<any, any, loginBodyType> = async (
   try {
     const { email, password } = req.body;
     const foundUser = await User.findOne({ email }).exec();
-
-    console.log(foundUser);
 
     // Check if email exists
     if (!foundUser) {

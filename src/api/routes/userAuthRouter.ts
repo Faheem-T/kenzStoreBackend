@@ -7,7 +7,7 @@ import {
   postLogout,
   postVerifyOtp,
   postResendOtp,
-} from "../handlers/userAuthHandler";
+} from "../controllers/userAuthController";
 import { validateRegisterMiddleware } from "../middlewares/validateRegisterMiddleware";
 
 export const userAuthRouter = Router()
