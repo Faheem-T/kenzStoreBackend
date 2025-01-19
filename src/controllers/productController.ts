@@ -50,7 +50,7 @@ export const getProduct: RequestHandler<{ id: string }> = async (
 };
 
 // create a new product
-export const postProduct: RequestHandler<void, any, CreateProductType> = async (
+export const postProduct: RequestHandler<any, any, CreateProductType> = async (
   req,
   res,
   next

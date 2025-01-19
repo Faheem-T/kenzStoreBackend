@@ -2,8 +2,8 @@ import Express from "express";
 import dotenv from "dotenv";
 import morgan from "morgan";
 import cors from "cors";
-import { rootRouter } from "./api/routes/router";
-import { errorHandlingMiddleware } from "./api/middlewares/errorMiddleware";
+import { rootRouter } from "./routes/router";
+import { errorHandlingMiddleware } from "./middlewares/errorMiddleware";
 import { connectDB } from "./config/mongoConnection";
 import cookieParser from "cookie-parser";
 

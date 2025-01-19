@@ -5,6 +5,7 @@ import { categoriesRouter } from "./categoriesRouter";
 import { reviewsRouter } from "./reviewsRouter";
 import { adminRouter } from "./adminRouter";
 import { userRouter } from "./userRoutes/userRouter";
+import { addressesRouter } from "./addressesRouter";
 
 export const rootRouter = Router()
   .use("/auth", userAuthRouter)
@@ -12,4 +13,5 @@ export const rootRouter = Router()
   .use("/categories", categoriesRouter)
   .use("/reviews", reviewsRouter)
   .use("/admin", adminRouter)
-  .use("/users", userRouter);
+  .use("/users", userRouter)
+  .use("/addresses", addressesRouter);

@@ -53,6 +53,16 @@ export const generateAccessToken = (userId: string) => {
   return jwt.sign({ userId }, ACCESS_SECRET, { expiresIn: ACCESS_MAX_AGE });
 };
 
+export const verifyAccessToken = (accessToken: string) => {
+  let decoded = null;
+  try {
+    decoded = <jwt.UserIDJwtPayload>jwt.verify(accessToken, ACCESS_SECRET);
+  } catch (error) {
+    console.log("user access verification error: \n", error);
+  }
+  return decoded;
+};
+
 // Admin jwt logic
 
 export const generateAdminRefreshToken = (adminId: string) => {

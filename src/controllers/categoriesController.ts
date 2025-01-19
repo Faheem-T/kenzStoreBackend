@@ -50,7 +50,7 @@ export const getCategories: RequestHandler = async (req, res, next) => {
 };
 
 export const postCategory: RequestHandler<
-  void,
+  any,
   any,
   UpdateCategoryType
 > = async (req, res, next) => {

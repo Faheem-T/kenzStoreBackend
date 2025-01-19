@@ -6,10 +6,11 @@ import {
   deleteCategory,
   updateCategory,
 } from "../controllers/categoriesController";
+import { adminAccessMiddleware } from "../middlewares/adminAccessMiddleware";
 
 export const categoriesRouter = Router()
   .get("/", getCategories)
-  .post("/", postCategory)
+  .post("/", adminAccessMiddleware, postCategory)
   .get("/:id", getCategory)
-  .delete("/:id", deleteCategory)
-  .patch("/:id", updateCategory);
+  .delete("/:id", adminAccessMiddleware, deleteCategory)
+  .patch("/:id", adminAccessMiddleware, updateCategory);
