@@ -5,7 +5,7 @@ import {
   setDefaultAddress,
   deleteAddress,
   updateAddress,
-} from "../controllers/addressesContraller";
+} from "../controllers/addressesController";
 import { userAccessMiddleware } from "../middlewares/userAccessMiddleware";
 
 // v1/addresses
