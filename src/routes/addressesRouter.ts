@@ -8,6 +8,7 @@ import {
 } from "../controllers/addressesContraller";
 import { userAccessMiddleware } from "../middlewares/userAccessMiddleware";
 
+// v1/addresses
 export const addressesRouter = Router()
   .get("/user", userAccessMiddleware, getUserAddresses)
   .post("/user", userAccessMiddleware, postUserAddress)

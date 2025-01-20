@@ -9,7 +9,7 @@ export const userAccessMiddleware: AuthenticatedRequestHandler = async (
   const accessToken = req.header("authorization")?.split(" ")[1];
   console.log(accessToken);
   if (!accessToken) {
-    res.status(400).json({
+    res.status(401).json({
       success: false,
       message: "Access Token not found.",
     });
@@ -20,7 +20,7 @@ export const userAccessMiddleware: AuthenticatedRequestHandler = async (
     req.userId = decoded.userId;
     next();
   } else {
-    res.status(400).json({
+    res.status(401).json({
       success: false,
       message: "Invalid/Expired access token",
     });

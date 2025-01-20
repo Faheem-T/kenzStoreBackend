@@ -1,12 +1,15 @@
 import { Address } from "../models/addressModel";
 import { AuthenticatedRequestHandler } from "../types/authenticatedRequest";
+import { AddressType } from "../types/address";
+import { BaseResponse } from "../types/baseResponse";
 
 // GET addresses/user
-export const getUserAddresses: AuthenticatedRequestHandler = async (
-  req,
-  res,
-  next
-) => {
+interface getUserResBody extends BaseResponse<AddressType[]> {}
+
+export const getUserAddresses: AuthenticatedRequestHandler<
+  {},
+  getUserResBody
+> = async (req, res, next) => {
   const userId = req.userId;
   if (!userId) {
     res.status(400).json({
@@ -43,7 +46,7 @@ export const postUserAddress: AuthenticatedRequestHandler = async (
   if (!userId) {
     res.status(400).json({
       success: false,
-      message: "User ID is required",
+      message: "User is not authenticated",
     });
     return;
   }
@@ -72,6 +75,16 @@ export const setDefaultAddress: AuthenticatedRequestHandler<{
     return;
   }
   try {
+    // set 'isDefault: false' for all other addresses and set this one as default
+    await Address.updateMany(
+      {
+        userId,
+        _id: { $ne: addressId },
+      },
+      {
+        isDefault: false,
+      }
+    );
     const updatedAddress = await Address.findOneAndUpdate(
       { _id: addressId, userId },
       {
@@ -110,7 +123,8 @@ export const updateAddress: AuthenticatedRequestHandler<{
   try {
     const updatedAddress = await Address.findOneAndUpdate(
       { _id: addressId, userId },
-      req.body
+      req.body,
+      { new: true }
     );
     if (!updatedAddress) {
       res.status(400).json({
@@ -123,6 +137,7 @@ export const updateAddress: AuthenticatedRequestHandler<{
       success: true,
       message: "Address updated successfully",
     });
+    console.log("Updated address: \n", updatedAddress);
   } catch (error) {
     next(error);
   }
