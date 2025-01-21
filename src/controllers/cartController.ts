@@ -110,14 +110,19 @@ export const getCart: AuthenticatedRequestHandler = async (req, res, next) => {
     }
 
     // calculate cart total
-    const cartTotal = cart.items.reduce(
-      (acc, item) => acc + (item.productId as any as ProductType).finalPrice,
-      0
-    );
+    let cartTotal = cart
+      ? cart.items.reduce(
+          (acc: number, item: any) =>
+            acc + item.productId.finalPrice * item.quantity,
+          0
+        )
+      : 0;
+
+    cartTotal = Math.round(cartTotal * 100) / 100;
 
     res.status(200).json({
       success: true,
-      data: { ...cart.toObject(), cartTotal },
+      data: { userId: cart?.userId, items: cart?.items || [], cartTotal },
     });
   } catch (error) {
     next(error);
@@ -182,8 +187,8 @@ export const clearCart: AuthenticatedRequestHandler = async (
 ) => {
   const userId = req.userId as string;
   try {
-    const deletedCart = await Cart.findOneAndDelete({ userId });
-    if (!deletedCart) {
+    const clearedCart = await Cart.findOneAndUpdate({ userId }, { items: [] });
+    if (!clearedCart) {
       res.status(400).json({
         success: false,
         message: "Cart not found",
