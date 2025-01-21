@@ -1,11 +1,12 @@
 import { Cart } from "../models/cartModel";
 import { Product } from "../models/productModel";
 import { AuthenticatedRequestHandler } from "../types/authenticatedRequest";
+import { ProductType } from "../types/product";
 
 export const addProductToCart: AuthenticatedRequestHandler<
   {},
   any,
-  { productId: string; quantity?: string }
+  { productId: string; quantity?: number }
 > = async (req, res, next) => {
   const userId = req.userId as string;
   const { productId, quantity = 1 } = req.body;
@@ -28,12 +29,32 @@ export const addProductToCart: AuthenticatedRequestHandler<
       });
       return;
     }
+
     let updatedCart;
+    // Delete product from cart if quantity is 0
+    if (quantity === 0) {
+      const cart = await Cart.findOne({ userId });
+      if (cart) {
+        updatedCart = await Cart.findOneAndUpdate(
+          { userId, "items.productId": productId },
+          { $pull: { items: { productId } } },
+          { new: true }
+        );
+      }
+      if (updatedCart) {
+        res.status(200).json({
+          success: true,
+          message: "Product removed from cart",
+        });
+        return;
+      }
+    }
+
     updatedCart = await Cart.findOneAndUpdate(
-      // finding cart by userId and productId and incrementing quantity
+      // finding cart by userId and productId and setting quantity
       { userId, "items.productId": productId },
-      { $inc: { "items.$.quantity": quantity } },
-      { upsert: true, new: true }
+      { $set: { "items.$.quantity": quantity } },
+      { new: true }
     );
 
     if (!updatedCart) {
@@ -50,6 +71,7 @@ export const addProductToCart: AuthenticatedRequestHandler<
         success: false,
         message: "Failed to add product to cart",
       });
+      return;
     }
 
     res.status(200).json({
@@ -72,9 +94,91 @@ export const getCart: AuthenticatedRequestHandler = async (req, res, next) => {
       });
       return;
     }
+
+    // calculate cart total
+    const cartTotal = cart.items.reduce(
+      (acc, item) => acc + (item.productId as any as ProductType).finalPrice,
+      0
+    );
+
+    res.status(200).json({
+      success: true,
+      data: { ...cart.toObject(), cartTotal },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getMinimalCart: AuthenticatedRequestHandler = async (
+  req,
+  res,
+  next
+) => {
+  const userId = req.userId as string;
+  try {
+    const cart = await Cart.findOne({ userId });
+    if (!cart) {
+      res.status(400).json({
+        success: false,
+        message: "Cart not found",
+      });
+      return;
+    }
     res.status(200).json({
       success: true,
       data: cart,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const deleteProductFromCart: AuthenticatedRequestHandler<{
+  productId: string;
+}> = async (req, res, next) => {
+  const userId = req.userId as string;
+  const { productId } = req.params;
+  try {
+    const updatedCart = await Cart.findOneAndUpdate(
+      { userId, "items.productId": productId },
+      { $pull: { items: { productId } } },
+      { new: true }
+    );
+    if (!updatedCart) {
+      res.status(400).json({
+        success: false,
+        message: "Item not found in cart",
+      });
+      return;
+    }
+    res.status(200).json({
+      success: true,
+      message: "Item removed from cart",
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const clearCart: AuthenticatedRequestHandler = async (
+  req,
+  res,
+  next
+) => {
+  const userId = req.userId as string;
+  try {
+    const deletedCart = await Cart.findOneAndDelete({ userId });
+    if (!deletedCart) {
+      res.status(400).json({
+        success: false,
+        message: "Cart not found",
+      });
+      return;
+    }
+    res.status(200).json({
+      success: true,
+      message: "Cart cleared successfully",
     });
   } catch (error) {
     next(error);
