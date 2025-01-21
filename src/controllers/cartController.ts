@@ -12,7 +12,7 @@ export const addProductToCart: AuthenticatedRequestHandler<
   const { productId, quantity = 1 } = req.body;
 
   try {
-    // find product and ensure it is not deleted
+    // make sure product exists
     const foundProduct = await Product.findById(productId);
     if (!foundProduct) {
       res.status(400).json({
@@ -21,11 +21,20 @@ export const addProductToCart: AuthenticatedRequestHandler<
       });
       return;
     }
-
+    // make sure it is not deleted
     if (foundProduct.isDeleted) {
       res.status(404).json({
         success: false,
         message: "This product has been deleted",
+      });
+      return;
+    }
+
+    // make sure quantity is not more than stock
+    if (foundProduct.stock < quantity) {
+      res.status(400).json({
+        success: false,
+        message: "Not enough stock",
       });
       return;
     }
@@ -56,15 +65,20 @@ export const addProductToCart: AuthenticatedRequestHandler<
       { $set: { "items.$.quantity": quantity } },
       { new: true }
     );
-
-    if (!updatedCart) {
-      // if cart not found, or productId not found, push a new item
-      updatedCart = await Cart.findOneAndUpdate(
-        { userId },
-        { $push: { items: { productId, quantity } } },
-        { upsert: true, new: true }
-      );
+    if (updatedCart) {
+      res.status(200).json({
+        success: true,
+        message: "Product quantity updated in cart",
+      });
+      return;
     }
+
+    // if cart not found, or productId not found, push a new item
+    updatedCart = await Cart.findOneAndUpdate(
+      { userId },
+      { $push: { items: { productId, quantity } } },
+      { upsert: true, new: true }
+    );
 
     if (!updatedCart) {
       res.status(400).json({
