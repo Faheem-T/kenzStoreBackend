@@ -17,6 +17,11 @@ const cartSchema = new mongoose.Schema<ICart>(
           ref: "Product",
           required: true,
         },
+        price: {
+          type: Number,
+          required: true,
+          min: [0, "Price cannot be negative"],
+        },
         quantity: {
           type: Number,
           required: true,

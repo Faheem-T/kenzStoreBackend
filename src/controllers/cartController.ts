@@ -131,7 +131,12 @@ export const getCart: AuthenticatedRequestHandler = async (req, res, next) => {
 
     res.status(200).json({
       success: true,
-      data: { userId: cart?.userId, items: cart?.items || [], cartTotal },
+      data: {
+        _id: cart?._id,
+        userId: cart?.userId,
+        items: cart?.items || [],
+        cartTotal,
+      },
     });
   } catch (error) {
     next(error);
