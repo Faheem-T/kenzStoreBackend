@@ -62,7 +62,12 @@ export const addProductToCart: AuthenticatedRequestHandler<
     updatedCart = await Cart.findOneAndUpdate(
       // finding cart by userId and productId and setting quantity
       { userId, "items.productId": productId },
-      { $set: { "items.$.quantity": quantity } },
+      {
+        $set: {
+          "items.$.quantity": quantity,
+          "items.$.price": foundProduct.finalPrice, // also update price
+        },
+      },
       { new: true }
     );
     if (updatedCart) {
@@ -76,7 +81,11 @@ export const addProductToCart: AuthenticatedRequestHandler<
     // if cart not found, or productId not found, push a new item
     updatedCart = await Cart.findOneAndUpdate(
       { userId },
-      { $push: { items: { productId, quantity } } },
+      {
+        $push: {
+          items: { productId, quantity, price: foundProduct.finalPrice },
+        },
+      },
       { upsert: true, new: true }
     );
 
