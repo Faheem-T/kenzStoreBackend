@@ -129,6 +129,17 @@ const ProductSchema = new mongoose.Schema<IProduct>(
         message: "End date must be after start date",
       },
     },
+
+    // Ratings related fields
+    ratingsCount: {
+      type: Number,
+      min: [0, "Ratings count cannot be negative"],
+    },
+    sumOfRatings: {
+      type: Number,
+      min: [0, "Sum of ratings cannot be negative"],
+    },
+
     // For soft deletion
     isDeleted: {
       type: Boolean,

@@ -93,7 +93,7 @@ export const getProducts: RequestHandler<
   any,
   {
     page: string;
-    sort: string;
+    sort: "asc" | "desc";
     sortBy: string;
     limit: string;
     filterField: string;

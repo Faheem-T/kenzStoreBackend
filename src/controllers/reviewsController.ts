@@ -1,6 +1,8 @@
 import { RequestHandler } from "express";
 import { Review } from "../models/reviewModel";
 import { postProductReviewBodyType } from "../types/requestBodyTypes";
+import { Product } from "../models/productModel";
+import { AuthenticatedRequestHandler } from "../types/authenticatedRequest";
 
 export const getReview: RequestHandler<{ id: string }> = async (
   req,
@@ -19,11 +21,9 @@ export const getReview: RequestHandler<{ id: string }> = async (
   }
 };
 
-export const getProductReviews: RequestHandler<{ productId: string }> = async (
-  req,
-  res,
-  next
-) => {
+export const getProductReviews: AuthenticatedRequestHandler<{
+  productId: string;
+}> = async (req, res, next) => {
   const { productId } = req.params;
 
   if (!productId) {
@@ -69,11 +69,15 @@ export const getProductReviews: RequestHandler<{ productId: string }> = async (
 };
 
 // TODO validate data
-export const postProductReview: RequestHandler<
+export const postProductReview: AuthenticatedRequestHandler<
   { productId: string },
   any,
   postProductReviewBodyType
 > = async (req, res, next) => {
+  const userId = req.userId as string;
+
+  console.log("UserId: ", userId);
+
   const { productId } = req.params;
 
   if (!productId) {
@@ -85,7 +89,15 @@ export const postProductReview: RequestHandler<
   }
 
   try {
-    const createdReview = await Review.create({ ...req.body, productId });
+    const createdReview = await Review.create({
+      ...req.body,
+      userId,
+      productId,
+    });
+    // also update product
+    const updatedProduct = await Product.findByIdAndUpdate(productId, {
+      $inc: { ratingsCount: 1, sumOfRatings: req.body.rating },
+    });
     res.status(201).json({
       success: true,
       data: createdReview,

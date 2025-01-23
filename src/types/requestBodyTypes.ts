@@ -1,6 +1,3 @@
 import { ReviewType } from "./reviews";
 
-export type postProductReviewBodyType = Pick<
-  ReviewType,
-  "userId" | "comment" | "rating"
->;
+export type postProductReviewBodyType = Pick<ReviewType, "comment" | "rating">;
