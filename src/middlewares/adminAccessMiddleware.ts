@@ -16,7 +16,7 @@ export const adminAccessMiddleware: AdminRequestHandler = (req, res, next) => {
     req.adminId = decoded.adminId;
     next();
   } else {
-    res.status(400).json({
+    res.status(401).json({
       success: false,
       message: "Invalid/Expired access token",
     });
