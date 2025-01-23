@@ -1,13 +1,16 @@
-import { AuthenticatedRequestHandler } from "../types/authenticatedRequest";
+import {
+  AdminRequestHandler,
+  AuthenticatedRequestHandler,
+} from "../types/authenticatedRequest";
 import { Order } from "../models/orderModel";
-import { PlaceOrderType } from "../types/order";
+import {
+  OrderStatus,
+  orderStatuses,
+  OrderType,
+  PlaceOrderType,
+} from "../types/order";
 import { Address } from "../models/addressModel";
 import { Cart } from "../models/cartModel";
-import {
-  CartType,
-  PickProductPopulatedCartType,
-  ProductPopulatedCartType,
-} from "../types/cart";
 import { Product } from "../models/productModel";
 import { ProductType } from "../types/product";
 import mongoose, { ObjectId } from "mongoose";
@@ -236,4 +239,213 @@ const validateCart = async (
     throw new CartValidationError("Cart validation failed", validationErrors);
   }
   return cart;
+};
+
+export const cancelOrder: AuthenticatedRequestHandler<{
+  orderId: string;
+}> = async (req, res, next) => {
+  const orderId = req.params.orderId;
+  const userId = req.userId;
+  if (!orderId) {
+    res.status(400).json({
+      success: false,
+      message: "Order ID is required",
+    });
+    return;
+  }
+
+  const order = await Order.findById(orderId);
+  if (!order) {
+    res.status(404).json({
+      success: false,
+      message: "Order not found",
+    });
+    return;
+  }
+
+  if (order.userId.toString() !== userId) {
+    res.status(403).json({
+      success: false,
+      message: "You are not authorized to cancel this order",
+    });
+    return;
+  }
+
+  if (order.status === "cancelled" || order.status === "completed") {
+    res.status(400).json({
+      success: false,
+      message: "Order is already " + order.status,
+    });
+    return;
+  }
+
+  order.status = "cancelled";
+  try {
+    await order.save();
+    res.status(200).json({
+      success: true,
+      message: "Order has been cancelled successfully",
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getAllUsersOrders: AuthenticatedRequestHandler = async (
+  req,
+  res,
+  next
+) => {
+  const userId = req.userId as string;
+  try {
+    const foundOrders = await Order.find({ userId }, "");
+    if (!foundOrders) {
+      res.status(400).json({
+        success: false,
+        message: "Couldn't find orders",
+      });
+      return;
+    }
+    res.status(200).json({
+      success: true,
+      data: foundOrders,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getOrder: AuthenticatedRequestHandler<{
+  orderId: string;
+}> = async (req, res, next) => {
+  const orderId = req.params.orderId;
+  const userId = req.userId;
+  if (!orderId) {
+    res.status(400).json({
+      success: false,
+      message: "Order ID is required",
+    });
+    return;
+  }
+  try {
+    const foundOrder = await Order.findOne({ _id: orderId, userId });
+    if (!foundOrder) {
+      res.status(400).json({
+        success: false,
+        message: "Could not find order",
+      });
+      return;
+    }
+
+    res.status(200).json({
+      success: true,
+      data: foundOrder,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getAllOrders: AdminRequestHandler = async (req, res, next) => {
+  const adminId = req.adminId;
+  if (!adminId) {
+    res.status(403).json({
+      success: false,
+      message: "Only admins can access this route",
+    });
+    return;
+  }
+
+  try {
+    const foundOrders = await Order.find({});
+    res.status(200).json({
+      success: true,
+      data: foundOrders,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const editOrder: AdminRequestHandler<
+  { orderId: string },
+  any,
+  Partial<OrderType>
+> = async (req, res, next) => {
+  const adminId = req.adminId as string;
+  const orderId = req.params.orderId;
+  if (!orderId) {
+    res.status(400).json({
+      success: false,
+      message: "Order ID is required",
+    });
+    return;
+  }
+  try {
+    const updatedOrder = await Order.findByIdAndUpdate(orderId, req.body, {
+      new: true,
+    });
+    if (!updatedOrder) {
+      res.status(400).json({
+        success: false,
+        message: "Order not found",
+      });
+      return;
+    }
+
+    res.status(200).json({
+      success: true,
+      data: updatedOrder,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const editOrderStatus: AdminRequestHandler<
+  { orderId: string },
+  any,
+  { status: OrderStatus }
+> = async (req, res, next) => {
+  const adminId = req.adminId as string;
+  const orderId = req.params.orderId;
+  if (!orderId) {
+    res.status(400).json({
+      success: false,
+      message: "Order ID is required",
+    });
+    return;
+  }
+  const { status } = req.body;
+  if (!orderStatuses.includes(status)) {
+    res.status(400).json({
+      success: false,
+      message: `${status} is not a valid status. Valid order statuses: ${orderStatuses.join(
+        ", "
+      )}`,
+    });
+  }
+  try {
+    const updatedOrder = await Order.findByIdAndUpdate(
+      orderId,
+      { status },
+      {
+        new: true,
+      }
+    );
+    if (!updatedOrder) {
+      res.status(400).json({
+        success: false,
+        message: "Order not found",
+      });
+      return;
+    }
+
+    res.status(200).json({
+      success: true,
+      data: updatedOrder,
+    });
+  } catch (error) {
+    next(error);
+  }
 };
