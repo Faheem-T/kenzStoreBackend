@@ -23,7 +23,7 @@ const AddressSchema = new mongoose.Schema<IAddress>(
       required: true,
     },
     pincode: {
-      type: String,
+      type: Number,
       required: true,
     },
     landmark: {

@@ -1,25 +1,16 @@
 import mongoose from "mongoose";
 import { ProductType } from "./product";
+import { ItemType, ProductPopulatedItem } from "./item";
 
 // SHARED TYPE: Sync with frontend
 export interface CartType {
   _id: mongoose.Schema.Types.ObjectId;
   userId: mongoose.Schema.Types.ObjectId;
-  items: {
-    _id: mongoose.Schema.Types.ObjectId;
-    productId: mongoose.Schema.Types.ObjectId;
-    price: number;
-    quantity: number;
-  }[];
+  items: ItemType[];
 }
 // SHARED TYPE: Sync with frontend
 export interface ProductPopulatedCartType extends Omit<CartType, "items"> {
-  items: {
-    _id: mongoose.Schema.Types.ObjectId;
-    productId: Partial<ProductType>;
-    price: number;
-    quantity: number;
-  }[];
+  items: ProductPopulatedItem[];
 }
 
 export interface PickProductPopulatedCartType<P extends keyof ProductType>

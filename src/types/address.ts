@@ -7,7 +7,7 @@ export interface AddressType {
   address_line: string;
   city: string;
   state: string;
-  pincode: string;
+  pincode: number;
   landmark?: string;
   isDefault: boolean;
   createdAt: Date;
