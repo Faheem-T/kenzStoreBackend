@@ -14,7 +14,7 @@ import { adminAccessMiddleware } from "../middlewares/adminAccessMiddleware";
 // v1/orders
 export const orderRouter = Router()
   .post("/", userAccessMiddleware, placeOrder)
-  .patch("/cancel/:orderId", userAccessMiddleware, cancelOrder)
+  .patch("/:orderId/cancel", userAccessMiddleware, cancelOrder)
   .get("/", userAccessMiddleware, getAllUsersOrders)
   .get("/admin", adminAccessMiddleware, getAllOrders) // Admin only
   .get("/:orderId", userAccessMiddleware, getOrder)

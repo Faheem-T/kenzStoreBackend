@@ -60,6 +60,9 @@ const orderSchema = new mongoose.Schema<IOrder>(
         type: String,
       },
     },
+    cancelledAt: {
+      type: Date,
+    },
   },
   { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
 );

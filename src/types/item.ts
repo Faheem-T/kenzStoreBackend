@@ -10,6 +10,7 @@ export interface ItemType {
 }
 
 // SHARED TYPE: Sync with frontend
-export interface ProductPopulatedItem extends Omit<ItemType, "productId"> {
-  productId: ProductType;
+export interface ProductPopulatedItem<T = ProductType>
+  extends Omit<ItemType, "productId"> {
+  productId: T;
 }

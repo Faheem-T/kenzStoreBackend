@@ -4,10 +4,12 @@ import {
 } from "../types/authenticatedRequest";
 import { Order } from "../models/orderModel";
 import {
+  GetUserOrder,
   OrderStatus,
   orderStatuses,
   OrderType,
   PlaceOrderType,
+  ProductPopulatedOrderType,
 } from "../types/order";
 import { Address } from "../models/addressModel";
 import { Cart } from "../models/cartModel";
@@ -15,6 +17,8 @@ import { Product } from "../models/productModel";
 import { ProductType } from "../types/product";
 import mongoose, { ObjectId } from "mongoose";
 import { AddressType } from "../types/address";
+import { BaseResponse } from "../types/baseResponse";
+import { ProductPopulatedItem } from "../types/item";
 
 // SHARED TYPE: Sync with frontend
 interface PlaceOrderResponse {
@@ -280,6 +284,7 @@ export const cancelOrder: AuthenticatedRequestHandler<{
   }
 
   order.status = "cancelled";
+  order.cancelledAt = new Date();
   try {
     await order.save();
     res.status(200).json({
@@ -291,14 +296,17 @@ export const cancelOrder: AuthenticatedRequestHandler<{
   }
 };
 
-export const getAllUsersOrders: AuthenticatedRequestHandler = async (
-  req,
-  res,
-  next
-) => {
+export const getAllUsersOrders: AuthenticatedRequestHandler<
+  {},
+  BaseResponse<GetUserOrder[]>
+> = async (req, res, next) => {
   const userId = req.userId as string;
   try {
-    const foundOrders = await Order.find({ userId }, "");
+    const foundOrders = await Order.find({ userId }).populate<{
+      items: ProductPopulatedItem<
+        Pick<ProductType, "name" | "description" | "images" | "_id">
+      >[];
+    }>("items.productId", "name description images _id");
     if (!foundOrders) {
       res.status(400).json({
         success: false,
