@@ -10,8 +10,8 @@ export interface OrderType {
     price: number;
     quantity: number;
   }[];
-  status: "pending" | "completed" | "cancelled";
-  paymentMethod: "COD" | "Credit Card" | "Debit Card";
+  status: OrderStatus;
+  paymentMethod: PaymentMethod;
   address: Pick<
     AddressType,
     "address_line" | "city" | "state" | "pincode" | "landmark"
@@ -30,3 +30,9 @@ export interface PlaceOrderType extends Pick<OrderType, "paymentMethod"> {
   cartId: string; // Cart ID
   addressId: string; // Address ID
 }
+
+// SHARED TYPE: Sync with frontend
+export type PaymentMethod = "COD" | "Credit Card" | "Debit Card";
+
+// SHARED TYPE: Sync with frontend
+export type OrderStatus = "pending" | "completed" | "cancelled";
