@@ -365,7 +365,11 @@ export const getAllOrders: AdminRequestHandler = async (req, res, next) => {
   }
 
   try {
-    const foundOrders = await Order.find({});
+    const foundOrders = await Order.find({}).populate<{
+      items: ProductPopulatedItem<
+        Pick<ProductType, "name" | "description" | "images" | "_id">
+      >[];
+    }>("items.productId", "name description images _id");
     res.status(200).json({
       success: true,
       data: foundOrders,
