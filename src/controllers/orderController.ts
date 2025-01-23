@@ -150,6 +150,9 @@ const processOrder = async ({
       landmark: foundAddress.landmark,
     };
 
+    // empty the cart
+    await Cart.findOneAndUpdate({ userId, _id: cartId }, { items: [] });
+
     // create order
     const order = await Order.create(
       [
