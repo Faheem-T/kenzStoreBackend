@@ -195,12 +195,12 @@ const validateCart = async (
       _id: mongoose.Schema.Types.ObjectId;
       productId: Pick<
         ProductType,
-        "_id" | "stock" | "price" | "isDeleted" | "listed"
+        "_id" | "stock" | "finalPrice" | "isDeleted" | "listed"
       >;
       price: number;
       quantity: number;
     }[];
-  }>("items.productId", "_id stock price isDeleted listed");
+  }>("items.productId", "_id stock finalPrice isDeleted listed");
 
   if (!cart) {
     throw new Error("Cart not found");
@@ -235,6 +235,14 @@ const validateCart = async (
         error: "Insufficient quantity",
         requested: item.quantity,
         available: product.stock,
+      });
+      return;
+    }
+    // ensure prices are up to date
+    if (product.finalPrice !== item.price) {
+      validationErrors.push({
+        item: item._id,
+        error: "Price has changed",
       });
       return;
     }
