@@ -96,14 +96,16 @@ export const getProducts: RequestHandler<
     sort: "asc" | "desc";
     sortBy: string;
     limit: string;
-    filterField: string;
+    q: string;
+    // filterField: string;
   }
 > = async (req, res, next) => {
   const {
     page = "1",
     sort = "asc",
     limit = "10",
-    filterField,
+    q = "",
+    // filterField,
     sortBy = "createdAt",
   } = req.query;
 
@@ -140,8 +142,17 @@ export const getProducts: RequestHandler<
     //   .populate(populateCategories())
     //   .exec();
     const currentDate = new Date();
+    const isQueryPresent = false;
     const foundProducts = await Product.aggregate([
-      { $match: { isDeleted: { $ne: true } } },
+      {
+        $match: {
+          isDeleted: { $ne: true },
+          $or: [
+            { name: { $regex: q, $options: "i" } },
+            { description: { $regex: q, $options: "i" } },
+          ],
+        },
+      },
       {
         $addFields: {
           avgRating: {
@@ -223,20 +234,11 @@ export const getProducts: RequestHandler<
         },
       },
     ]);
-    console.log(foundProducts);
-    if (foundProducts.length) {
-      res.status(200).json({
-        success: true,
-        data: foundProducts,
-        count: foundProducts.length,
-      });
-    } else {
-      res.status(400).json({
-        success: false,
-        data: [],
-        message: "No products found",
-      });
-    }
+    res.status(200).json({
+      success: true,
+      data: foundProducts,
+      count: foundProducts.length,
+    });
   } catch (error) {
     next(error);
   }
