@@ -7,7 +7,6 @@ export const userAccessMiddleware: AuthenticatedRequestHandler = async (
   next
 ) => {
   const accessToken = req.header("authorization")?.split(" ")[1];
-  console.log(accessToken);
   if (!accessToken) {
     res.status(401).json({
       success: false,

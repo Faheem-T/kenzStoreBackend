@@ -32,7 +32,7 @@ export const getProduct: RequestHandler<{ id: string }> = async (
       productId,
       productProjection
     ).populate(populateCategories());
-    console.log(foundProduct);
+
     if (!foundProduct?.isDeleted) {
       res.status(200).json({
         success: true,
@@ -159,7 +159,9 @@ export const getProducts: RequestHandler<
             $cond: {
               if: { $eq: ["$ratingsCount", 0] }, // Check if ratingsCount is zero
               then: 0, // Default value if true
-              else: { $divide: ["$sumOfRatings", "$ratingsCount"] }, // Calculate avgRating if false
+              else: {
+                $round: [{ $divide: ["$sumOfRatings", "$ratingsCount"] }, 2],
+              }, // Calculate avgRating if false
             },
           },
         },
@@ -251,7 +253,6 @@ export const getHeroProducts: RequestHandler = async (req, res, next) => {
       { isHero: true, listed: true },
       productProjection
     ).populate("categories");
-    console.log(heroProducts[0].categories);
     res.status(200).json({
       success: true,
       data: heroProducts,
