@@ -195,12 +195,26 @@ const validateCart = async (
       _id: mongoose.Schema.Types.ObjectId;
       productId: Pick<
         ProductType,
-        "_id" | "stock" | "finalPrice" | "isDeleted" | "listed"
+        | "_id"
+        | "stock"
+        | "isDiscountActive"
+        | "discountType"
+        | "discountValue"
+        | "price"
+        | "finalPrice"
+        | "isDeleted"
+        | "listed"
+        | "discountStartDate"
+        | "discountEndDate"
       >;
       price: number;
       quantity: number;
     }[];
-  }>("items.productId", "_id stock finalPrice isDeleted listed");
+  }>(
+    "items.productId",
+    "_id stock discountStartDate discountEndDate isDiscountActive discountType discountValue price finalPrice isDeleted listed"
+  );
+  console.log(cart?.items.map((item) => item.productId));
 
   if (!cart) {
     throw new Error("Cart not found");
