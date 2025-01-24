@@ -53,7 +53,7 @@ export const getProductReviews: AuthenticatedRequestHandler<{
       (acc, currentReview) => acc + currentReview.rating,
       0
     );
-    const averageRating = totalRating / ratingsCount;
+    const averageRating = Math.round((totalRating / ratingsCount) * 100) / 100;
 
     res.status(200).json({
       success: true,
