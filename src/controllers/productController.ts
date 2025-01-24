@@ -121,7 +121,7 @@ export const getProducts: RequestHandler<
   }
 
   // Whitelist of fields allowed for sorting
-  const validSortFields = ["createdAt", "price", "name"];
+  const validSortFields = ["createdAt", "price", "name", "avgRating"];
   if (!validSortFields.includes(sortBy)) {
     res.status(400).json({
       success: false,
@@ -133,12 +133,97 @@ export const getProducts: RequestHandler<
   }
 
   try {
-    const foundProducts = await Product.find({ isDeleted: { $ne: true } })
-      .sort({ [sortBy]: sortOrder })
-      .skip((pageNum - 1) * limitNum)
-      .limit(limitNum)
-      .populate(populateCategories())
-      .exec();
+    // const foundProducts = await Product.find({ isDeleted: false })
+    //   .sort({ [sortBy]: sortOrder })
+    //   .skip((pageNum - 1) * limitNum)
+    //   .limit(limitNum)
+    //   .populate(populateCategories())
+    //   .exec();
+    const currentDate = new Date();
+    const foundProducts = await Product.aggregate([
+      { $match: { isDeleted: { $ne: true } } },
+      {
+        $addFields: {
+          avgRating: {
+            $cond: {
+              if: { $eq: ["$ratingsCount", 0] }, // Check if ratingsCount is zero
+              then: 0, // Default value if true
+              else: { $divide: ["$sumOfRatings", "$ratingsCount"] }, // Calculate avgRating if false
+            },
+          },
+        },
+      },
+      {
+        $sort: { [sortBy]: sortOrder },
+      },
+      {
+        $skip: (pageNum - 1) * limitNum,
+      },
+      {
+        $limit: limitNum,
+      },
+      {
+        $lookup: {
+          from: "categories",
+          localField: "categories",
+          foreignField: "_id",
+          as: "categories",
+        },
+      },
+      {
+        $addFields: {
+          isDiscountActive: {
+            $and: [
+              { $ifNull: ["$discountStartDate", false] },
+              { $ifNull: ["$discountEndDate", false] },
+              { $lte: ["$discountStartDate", currentDate] },
+              { $gte: ["$discountEndDate", currentDate] },
+            ],
+          },
+        },
+      },
+      {
+        $addFields: {
+          finalPrice: {
+            $cond: {
+              if: "$isDiscountActive",
+              then: {
+                $switch: {
+                  branches: [
+                    {
+                      case: { $eq: ["$discountType", "percentage"] },
+                      then: {
+                        $round: [
+                          {
+                            $multiply: [
+                              "$price",
+                              {
+                                $subtract: [
+                                  1,
+                                  { $divide: ["$discountValue", 100] },
+                                ],
+                              },
+                            ],
+                          },
+                          2,
+                        ],
+                      },
+                    },
+                    {
+                      case: { $eq: ["$discountType", "fixed"] },
+                      then: { $subtract: ["$price", "$discountValue"] },
+                    },
+                  ],
+                  default: "$price",
+                },
+              },
+              else: "$price",
+            },
+          },
+        },
+      },
+    ]);
+    console.log(foundProducts);
     if (foundProducts.length) {
       res.status(200).json({
         success: true,
