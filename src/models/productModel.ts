@@ -133,10 +133,12 @@ const ProductSchema = new mongoose.Schema<IProduct>(
     // Ratings related fields
     ratingsCount: {
       type: Number,
+      default: 0,
       min: [0, "Ratings count cannot be negative"],
     },
     sumOfRatings: {
       type: Number,
+      default: 0,
       min: [0, "Sum of ratings cannot be negative"],
     },
 
