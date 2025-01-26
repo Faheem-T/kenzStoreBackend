@@ -9,15 +9,21 @@ import {
 import { registerBodyType } from "../types/registerSchema";
 import { loginBodyType } from "../types/loginSchema";
 import {
+  decodeForgotPasswordJWT,
   generateAccessToken,
   generateAdminAccessToken,
+  generateForgotPasswordJWT,
   generateRefreshToken,
   REFRESH_MAX_AGE,
   verifyAdminRefreshToken,
   verifyRefreshToken,
-} from "../utils/jwtHelper";
+} from "../utils/authJwtHelper";
 import { Admin } from "../models/adminModel";
-import { generateOtp, sendOTPtoMail } from "../utils/nodeMailer";
+import {
+  generateOtp,
+  sendOTPtoMail,
+  sendPasswordResetLinktoEmail,
+} from "../utils/nodeMailer";
 import { OTP } from "../models/otpModel";
 
 export const getMe: RequestHandler = async (req, res, next) => {
@@ -353,4 +359,67 @@ export const postLogout: RequestHandler = (req, res) => {
     success: true,
     message: "Logged out successfully",
   });
+};
+
+// forgot password route
+export const postForgotPassword: RequestHandler = async (req, res, next) => {
+  const { email } = req.body;
+  try {
+    const foundUser = await User.findOne({ email }).exec();
+    if (!foundUser) {
+      res.status(400).json({
+        success: false,
+        message: "Email not found",
+      });
+      return;
+    }
+
+    const token = generateForgotPasswordJWT(email);
+    sendPasswordResetLinktoEmail(email, token);
+
+    res.status(200).json({
+      success: true,
+      message: "Password reset mail has been sent",
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const postResetPassword: RequestHandler = async (req, res, next) => {
+  const { newPassword, token } = req.body;
+  if (!newPassword) {
+    res.status(400).json({
+      success: false,
+      message: "New password is required",
+    });
+  }
+  if (!token) {
+    res.status(400).json({
+      success: false,
+      message: "Token not found",
+    });
+    return;
+  }
+
+  const decoded = decodeForgotPasswordJWT(token);
+  if (!decoded) {
+    res.status(400).json({
+      success: false,
+      message: "Invalid token",
+    });
+    return;
+  }
+
+  const { email } = decoded;
+  const hashedPassword = hashPassword(newPassword);
+  try {
+    await User.findOneAndUpdate({ email }, { password: hashedPassword });
+    res.status(200).json({
+      success: true,
+      message: "Password has been reset successfully",
+    });
+  } catch (error) {
+    next(error);
+  }
 };

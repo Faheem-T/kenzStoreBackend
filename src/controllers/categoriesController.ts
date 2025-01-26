@@ -1,7 +1,7 @@
 import { RequestHandler } from "express";
 import { Category } from "../models/categoryModel";
-import { populateCategories } from "../utils/populateCategoriesHelper";
-import { UpdateCategoryType } from "../types/categories";
+import { populateCategory } from "../utils/populateCategoryHelper";
+import { UpdateCategoryType } from "../types/category";
 
 const categoryProjection = {
   name: 1,
@@ -22,7 +22,7 @@ export const getCategory: RequestHandler<{ id: string }> = async (
     const foundCategory = await Category.findById(
       categoryId,
       categoryProjection
-    ).populate(populateCategories(1, "parentCategory"));
+    ).populate(populateCategory(1, "parentCategory"));
     // TODO check if `isDeleted` is true
     res.status(200).json({
       success: true,
@@ -39,7 +39,7 @@ export const getCategories: RequestHandler = async (req, res, next) => {
     const foundCategories = await Category.find(
       { isDeleted: { $ne: true } },
       categoryProjection
-    ).populate(populateCategories(1, "parentCategory"));
+    ).populate(populateCategory(1, "parentCategory"));
     res.status(200).json({
       success: true,
       data: foundCategories,

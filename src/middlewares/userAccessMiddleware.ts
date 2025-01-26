@@ -1,5 +1,5 @@
 import { AuthenticatedRequestHandler } from "../types/authenticatedRequest";
-import { verifyAccessToken } from "../utils/jwtHelper";
+import { verifyAccessToken } from "../utils/authJwtHelper";
 
 export const userAccessMiddleware: AuthenticatedRequestHandler = async (
   req,

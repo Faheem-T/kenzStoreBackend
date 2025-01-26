@@ -21,7 +21,7 @@ if (!host || !port || !user || !pass) {
 
 const transporter = nodemailer.createTransport({
   host,
-  port,
+  port: port,
   secure: true,
   auth: {
     user,
@@ -39,6 +39,30 @@ export const sendOTPtoMail = (userGmail: string, otp: number) => {
     to: userGmail,
     subject: "OTP For Kenz Store Registration",
     text: `Your OTP is \n${otp}`,
+  };
+  transporter.sendMail(mailOptions, (error, info) => {
+    if (error) {
+      console.error("Error sending email", error);
+    } else {
+      console.log("Email sent: ", info.response);
+    }
+  });
+};
+// TODO beautify the email
+const frontendURL = process.env.FRONTEND_URL;
+if (!frontendURL)
+  throw new Error("FRONTEND_URL not found. (Set it in your .env)");
+export const sendPasswordResetLinktoEmail = (
+  userGmail: string,
+  token: string
+) => {
+  const mailOptions: MailOptions = {
+    from: user,
+    to: userGmail,
+    subject: "Forgot password OTP.",
+    text: `Click here to reset your password: ${
+      frontendURL + "reset-password?" + `token=${token}`
+    }`,
   };
   transporter.sendMail(mailOptions, (error, info) => {
     if (error) {

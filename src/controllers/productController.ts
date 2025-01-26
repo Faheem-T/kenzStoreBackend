@@ -1,6 +1,6 @@
 import { RequestHandler } from "express";
 import { Product } from "../models/productModel";
-import { populateCategories } from "../utils/populateCategoriesHelper";
+import { populateCategory } from "../utils/populateCategoryHelper";
 import { CreateProductType, UpdateProductType } from "../types/product";
 
 // Fields to be included when sending
@@ -10,7 +10,7 @@ const productProjection = {
   price: 1,
   brand: 1,
   images: 1,
-  categories: 1,
+  category: 1,
   specifications: 1,
   stock: 1,
   isHero: 1,
@@ -31,7 +31,7 @@ export const getProduct: RequestHandler<{ id: string }> = async (
     const foundProduct = await Product.findById(
       productId,
       productProjection
-    ).populate(populateCategories());
+    ).populate(populateCategory());
 
     if (!foundProduct?.isDeleted) {
       res.status(200).json({
@@ -139,7 +139,7 @@ export const getProducts: RequestHandler<
     //   .sort({ [sortBy]: sortOrder })
     //   .skip((pageNum - 1) * limitNum)
     //   .limit(limitNum)
-    //   .populate(populateCategories())
+    //   .populate(populateCategory())
     //   .exec();
     const currentDate = new Date();
     const isQueryPresent = false;
@@ -178,10 +178,13 @@ export const getProducts: RequestHandler<
       {
         $lookup: {
           from: "categories",
-          localField: "categories",
+          localField: "category",
           foreignField: "_id",
-          as: "categories",
+          as: "category",
         },
+      },
+      {
+        $unwind: "$category",
       },
       {
         $addFields: {
@@ -236,6 +239,7 @@ export const getProducts: RequestHandler<
         },
       },
     ]);
+    console.log(foundProducts);
     res.status(200).json({
       success: true,
       data: foundProducts,
@@ -252,7 +256,7 @@ export const getHeroProducts: RequestHandler = async (req, res, next) => {
     const heroProducts = await Product.find(
       { isHero: true, listed: true },
       productProjection
-    ).populate("categories");
+    ).populate("category");
     res.status(200).json({
       success: true,
       data: heroProducts,
@@ -290,14 +294,14 @@ export const getRelatedProducts: RequestHandler<
         _id: { $ne: id },
         isDeleted: { $ne: true },
         $or: [
-          { categories: { $in: currentProduct.categories } },
+          { category: currentProduct.category },
           { brand: currentProduct.brand },
         ],
       },
       productProjection
     )
       .limit(limit)
-      .populate("categories")
+      .populate("category")
       .exec();
 
     res.status(200).json({

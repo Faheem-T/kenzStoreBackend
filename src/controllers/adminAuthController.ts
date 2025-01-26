@@ -7,7 +7,7 @@ import {
   generateAdminRefreshToken,
   REFRESH_MAX_AGE,
   verifyAdminRefreshToken,
-} from "../utils/jwtHelper";
+} from "../utils/authJwtHelper";
 
 export const postAdminLogin: RequestHandler<void, any, AdminType> = async (
   req,

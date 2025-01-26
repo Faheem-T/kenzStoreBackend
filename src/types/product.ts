@@ -1,4 +1,4 @@
-import { CategoryType } from "./categories";
+import { CategoryType } from "./category";
 
 // SHARED TYPE: Sync with frontend
 export interface ProductType {
@@ -9,7 +9,7 @@ export interface ProductType {
   price: number;
   stock: number;
   images: string[];
-  categories: CategoryType[];
+  category: CategoryType;
   listed: boolean;
   isHero?: boolean;
 
@@ -56,12 +56,13 @@ export interface CreateProductType
     | "finalPrice"
     | "listed"
     | "isHero"
-    | "categories" // changing from populated to id
+    | "category" // changing from populated to id
+    | "isDeleted"
   > {
-  categories: string[];
+  category: string;
 }
 // SHARED TYPE: Sync with frontend
 export interface UpdateProductType
-  extends Partial<Omit<CreateProductType, "categories">> {
-  categories: string[];
+  extends Partial<Omit<CreateProductType, "category">> {
+  category?: string;
 }

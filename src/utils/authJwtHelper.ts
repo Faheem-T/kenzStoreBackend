@@ -11,6 +11,9 @@ declare module "jsonwebtoken" {
   export interface AdminIDJwtPayload extends jwt.JwtPayload {
     adminId: string;
   }
+  export interface UserEmailJwtPayload extends jwt.JwtPayload {
+    email: string;
+  }
 }
 
 const REFRESH_SECRET = process.env.JWT_REFRESH_SECRET;
@@ -34,6 +37,11 @@ if (
     "Refresh/Access secret not found (Please set it in your .env)"
   );
 }
+
+const FORGOT_PASS_JWT_SECRET = process.env.JWT_FORGOT_PASS_SECRET;
+const FORGOT_PASS_JWT_MAX_AGE = 60 * 5; // 5 minutes
+if (!FORGOT_PASS_JWT_SECRET)
+  throw new Error("JWT_FORGOT_PASS_SECRET not found. (Set it in your .env)");
 
 export const generateRefreshToken = (userId: string) => {
   return jwt.sign({ userId }, REFRESH_SECRET, { expiresIn: REFRESH_MAX_AGE });
@@ -97,6 +105,25 @@ export const verifyAdminAccessToken = (accessToken: string) => {
     );
   } catch (error) {
     console.log("Admin access token verification error: ", error);
+  }
+  return decoded;
+};
+
+// Forgot password related logic
+export const generateForgotPasswordJWT = (email: string) => {
+  return jwt.sign({ email }, FORGOT_PASS_JWT_SECRET, {
+    expiresIn: FORGOT_PASS_JWT_MAX_AGE,
+  });
+};
+
+export const decodeForgotPasswordJWT = (token: string) => {
+  let decoded = null;
+  try {
+    decoded = <jwt.UserEmailJwtPayload>(
+      jwt.verify(token, FORGOT_PASS_JWT_SECRET)
+    );
+  } catch (error) {
+    console.log("Forgot password jwt verification error: ", error);
   }
   return decoded;
 };

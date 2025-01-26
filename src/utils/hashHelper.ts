@@ -21,6 +21,5 @@ export const hashOtp = (otp: number): string => {
 
 export const validateOtp = (otp: number, hashedOtp: string) => {
   const result = compareSync(otp.toString(), hashedOtp);
-  console.log("Is OTP valid?: ", result);
   return result;
 };

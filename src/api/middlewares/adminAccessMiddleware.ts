@@ -1,7 +1,8 @@
-import { verifyAdminAccessToken } from "../utils/authJwtHelper";
-import { AdminRequestHandler } from "../types/authenticatedRequest";
+import { RequestHandler } from "express";
+import { verifyAdminAccessToken } from "../../utils/authJwtHelper";
 
-export const adminAccessMiddleware: AdminRequestHandler = (req, res, next) => {
+export const adminAccessMiddleware: RequestHandler = (req, res, next) => {
+  console.log(req.headers);
   const accessToken = req.header("authorization")?.split(" ")[1];
   console.log(accessToken);
   if (!accessToken) {
@@ -16,7 +17,7 @@ export const adminAccessMiddleware: AdminRequestHandler = (req, res, next) => {
     req.adminId = decoded.adminId;
     next();
   } else {
-    res.status(401).json({
+    res.status(400).json({
       success: false,
       message: "Invalid/Expired access token",
     });

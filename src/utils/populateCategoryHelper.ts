@@ -1,7 +1,4 @@
-export function populateCategories(
-  depth: number = 3,
-  path: string = "categories"
-) {
+export function populateCategory(depth: number = 3, path: string = "category") {
   const populateRecursive = (currentDepth: number): any => {
     if (currentDepth <= 0) return null;
 

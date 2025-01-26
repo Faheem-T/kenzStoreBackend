@@ -49,20 +49,12 @@ const ProductSchema = new mongoose.Schema<IProduct>(
         message: "Product must have at least one image",
       },
     },
-    categories: {
-      type: [
-        {
-          type: mongoose.Types.ObjectId,
-          ref: "Category",
-        },
-      ],
-      validate: {
-        validator: function (v) {
-          return v.length > 0; // Ensure at least one category
-        },
-        message: "Product must belong to at least one category",
-      },
+    category: {
+      type: mongoose.Types.ObjectId,
+      ref: "Category",
+      required: true,
     },
+
     isHero: { type: Boolean, default: false },
 
     // specifications: { type: mongoose.Schema.Types.Mixed, default: {} },
