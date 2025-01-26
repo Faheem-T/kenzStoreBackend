@@ -95,9 +95,24 @@ export const postProductReview: AuthenticatedRequestHandler<
       productId,
     });
     // also update product
-    const updatedProduct = await Product.findByIdAndUpdate(productId, {
-      $inc: { ratingsCount: 1, sumOfRatings: req.body.rating },
-    });
+    const updatedProduct = await Product.findById(productId);
+    if (!updatedProduct) {
+      res.status(400).json({
+        success: false,
+        message: "Product not found",
+      });
+
+      return;
+    }
+    const oldAvg = updatedProduct.avgRating;
+    const ratingsCount = updatedProduct.ratingsCount;
+    let newAvg = (oldAvg * ratingsCount + req.body.rating) / (ratingsCount + 1);
+    newAvg = Math.round(newAvg * 100) / 100;
+
+    updatedProduct.avgRating = newAvg;
+    updatedProduct.ratingsCount = ratingsCount + 1;
+    await updatedProduct.save();
+
     res.status(201).json({
       success: true,
       data: createdReview,

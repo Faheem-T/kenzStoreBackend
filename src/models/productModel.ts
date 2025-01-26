@@ -128,10 +128,10 @@ const ProductSchema = new mongoose.Schema<IProduct>(
       default: 0,
       min: [0, "Ratings count cannot be negative"],
     },
-    sumOfRatings: {
+    avgRating: {
       type: Number,
       default: 0,
-      min: [0, "Sum of ratings cannot be negative"],
+      min: [0, "Average ratings cannot be negative"],
     },
 
     // For soft deletion
