@@ -7,6 +7,8 @@ import {
   postLogout,
   postVerifyOtp,
   postResendOtp,
+  postForgotPassword,
+  postResetPassword,
 } from "../controllers/userAuthController";
 import { validateRegisterMiddleware } from "../middlewares/validateRegisterMiddleware";
 
@@ -17,4 +19,6 @@ export const userAuthRouter = Router()
   .post("/resend-otp", postResendOtp)
   .post("/login", postLogin)
   .get("/refresh", getRefresh)
-  .post("/logout", postLogout);
+  .post("/logout", postLogout)
+  .post("/forgot-password", postForgotPassword)
+  .post("/reset-password", postResetPassword);

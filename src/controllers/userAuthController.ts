@@ -406,7 +406,7 @@ export const postResetPassword: RequestHandler = async (req, res, next) => {
   if (!decoded) {
     res.status(400).json({
       success: false,
-      message: "Invalid token",
+      message: "Invalid token. Please try again.",
     });
     return;
   }
@@ -417,7 +417,7 @@ export const postResetPassword: RequestHandler = async (req, res, next) => {
     await User.findOneAndUpdate({ email }, { password: hashedPassword });
     res.status(200).json({
       success: true,
-      message: "Password has been reset successfully",
+      message: "Password has been reset successfully!",
     });
   } catch (error) {
     next(error);
