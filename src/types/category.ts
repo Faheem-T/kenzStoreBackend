@@ -7,6 +7,14 @@ export interface CategoryType {
   parentCategory?: string; // ObjectId of parent category
   image?: string;
   isActive: boolean;
+  // discount related fields
+  discountName?: string;
+  discountType: "percentage" | "fixed";
+  discountValue: number;
+  discountStartDate: Date;
+  discountEndDate: Date;
+  // discount virtual
+  isDiscountActive: boolean;
   // deletion indicator
   isDeleted: boolean;
   // timestamp fields

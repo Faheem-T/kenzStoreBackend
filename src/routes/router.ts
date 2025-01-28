@@ -8,6 +8,7 @@ import { userRouter } from "./userRoutes/userRouter";
 import { addressesRouter } from "./addressesRouter";
 import { cartRouter } from "./cartRouter";
 import { orderRouter } from "./orderRouter";
+import { offerRoutes } from "./offerRoutes";
 
 // v1/
 export const rootRouter = Router()
@@ -19,4 +20,5 @@ export const rootRouter = Router()
   .use("/users", userRouter)
   .use("/addresses", addressesRouter)
   .use("/cart", cartRouter)
-  .use("/orders", orderRouter);
+  .use("/orders", orderRouter)
+  .use("/offers", offerRoutes);

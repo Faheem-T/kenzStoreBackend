@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import { Cart } from "../models/cartModel";
 import { Product } from "../models/productModel";
 import { AuthenticatedRequestHandler } from "../types/authenticatedRequest";
@@ -13,7 +14,22 @@ export const addProductToCart: AuthenticatedRequestHandler<
 
   try {
     // make sure product exists
-    const foundProduct = await Product.findById(productId);
+    const foundProduct = await Product.findById(productId).populate({
+      path: "category",
+      select:
+        "name discountName discountType discountValue discountStartDate discountEndDate",
+    });
+
+    // const aggregationResult = await Product.aggregate([
+    //   {
+    //     $match: { _id: new mongoose.Types.ObjectId(productId) },
+    //   },
+    //   ...finalPriceCalculationAggregation,
+    //   singleProductProjection,
+    // ]);
+
+    // const foundProduct = aggregationResult[0];
+
     if (!foundProduct) {
       res.status(400).json({
         success: false,
@@ -21,6 +37,7 @@ export const addProductToCart: AuthenticatedRequestHandler<
       });
       return;
     }
+
     // make sure it is not deleted
     if (foundProduct.isDeleted) {
       res.status(404).json({
@@ -109,7 +126,91 @@ export const addProductToCart: AuthenticatedRequestHandler<
 export const getCart: AuthenticatedRequestHandler = async (req, res, next) => {
   const userId = req.userId as string;
   try {
-    const cart = await Cart.findOne({ userId }).populate("items.productId");
+    const cart = await Cart.findOne({ userId }).populate({
+      path: "items.productId",
+      populate: { path: "category" },
+    });
+    // .populate("items.productId.category");
+    // const aggregationCarts = await Cart.aggregate([
+    //   // Match the cart for the specific user
+    //   {
+    //     $match: { userId: new mongoose.Types.ObjectId(userId) },
+    //   },
+    //   // Unwind the items array to process each item separately
+    //   {
+    //     $unwind: "$items",
+    //   },
+    //   // Perform a lookup to fetch product details
+    //   {
+    //     $lookup: {
+    //       from: "products", // Collection name for products
+    //       localField: "items.productId", // Field in Cart pointing to Product
+    //       foreignField: "_id", // Field in Product to match
+    //       as: "product", // Name of the new field to add the result
+    //     },
+    //   },
+    //   // Unwind the product array
+    //   {
+    //     $unwind: "$product",
+    //   },
+    //   // Lookup for category details within the product
+    //   {
+    //     $lookup: {
+    //       from: "categories", // Collection name for categories
+    //       localField: "product.category",
+    //       foreignField: "_id",
+    //       as: "product.category",
+    //     },
+    //   },
+    //   // Unwind the category array
+    //   {
+    //     $unwind: {
+    //       path: "$product.category",
+    //       preserveNullAndEmptyArrays: true, // Handle products without a category
+    //     },
+    //   },
+    //   // Apply the discount calculation pipeline
+
+    //   ...finalPriceCalculationAggregation.map((stage) => ({
+    //     $replaceRoot: {
+    //       newRoot: {
+    //         $mergeObjects: ["$$ROOT", { product: stage }],
+    //       },
+    //     },
+    //   })),
+    //   // Reconstruct the cart with items including calculated final price
+    //   {
+    //     $group: {
+    //       _id: "$_id", // Group by cart ID
+    //       userId: { $first: "$userId" },
+    //       items: {
+    //         $push: {
+    //           product: {
+    //             _id: "$product._id",
+    //             name: "$product.name",
+    //             price: "$product.price",
+    //             finalPrice: "$product.finalPrice",
+    //             effectiveDiscount: "$product.effectiveDiscount",
+    //             appliedDiscountName: "$product.appliedDiscountName",
+    //           },
+    //           quantity: "$items.quantity",
+    //         },
+    //       },
+    //     },
+    //   },
+    //   // Optionally, project the final result
+    //   {
+    //     $project: {
+    //       _id: 1,
+    //       userId: 1,
+    //       items: 1,
+    //     },
+    //   },
+    // ]);
+
+    // const cart = aggregationCarts[0];
+    console.log(cart);
+
     if (!cart) {
       res.status(400).json({
         success: false,
@@ -117,6 +218,7 @@ export const getCart: AuthenticatedRequestHandler = async (req, res, next) => {
       });
       return;
     }
+    cart?.items.forEach((item) => console.log(item));
 
     // calculate cart total
     let cartTotal = cart

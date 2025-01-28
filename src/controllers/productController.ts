@@ -2,6 +2,7 @@ import { RequestHandler } from "express";
 import { Product } from "../models/productModel";
 import { populateCategory } from "../utils/populateCategoryHelper";
 import { CreateProductType, UpdateProductType } from "../types/product";
+import mongoose from "mongoose";
 
 // Fields to be included when sending
 const productProjection = {
@@ -20,6 +21,146 @@ const productProjection = {
   discountType: 1,
   isDeleted: 1,
 };
+
+export const finalPriceCalculationAggregation = [
+  {
+    $addFields: {
+      // Calculate product discount only if within the valid date range
+      productDiscount: {
+        $cond: [
+          {
+            $and: [
+              { $eq: ["$discountType", "percentage"] },
+              { $lte: ["$discountStartDate", new Date()] },
+              { $gte: ["$discountEndDate", new Date()] },
+            ],
+          },
+          { $multiply: ["$discountValue", "$price", 0.01] },
+          {
+            $cond: [
+              {
+                $and: [
+                  { $eq: ["$discountType", "fixed"] },
+                  { $lte: ["$discountStartDate", new Date()] },
+                  { $gte: ["$discountEndDate", new Date()] },
+                ],
+              },
+              "$discountValue",
+              0,
+            ],
+          },
+        ],
+      },
+      productDiscountName: {
+        $cond: [
+          {
+            $and: [
+              {
+                $or: [
+                  { $eq: ["$discountType", "percentage"] },
+                  { $eq: ["$discountType", "fixed"] },
+                ],
+              },
+              { $lte: ["$discountStartDate", new Date()] },
+              { $gte: ["$discountEndDate", new Date()] },
+            ],
+          },
+          "$discountName",
+          null,
+        ],
+      },
+      categoryDiscount: {
+        $cond: [
+          {
+            $and: [
+              { $eq: ["$category.discountType", "percentage"] },
+              { $lte: ["$category.discountStartDate", new Date()] },
+              { $gte: ["$category.discountEndDate", new Date()] },
+            ],
+          },
+          { $multiply: ["$category.discountValue", "$price", 0.01] },
+          {
+            $cond: [
+              {
+                $and: [
+                  { $eq: ["$category.discountType", "fixed"] },
+                  { $lte: ["$category.discountStartDate", new Date()] },
+                  { $gte: ["$category.discountEndDate", new Date()] },
+                ],
+              },
+              "$category.discountValue",
+              0,
+            ],
+          },
+        ],
+      },
+      categoryDiscountName: {
+        $cond: [
+          {
+            $and: [
+              {
+                $or: [
+                  { $eq: ["$category.discountType", "percentage"] },
+                  { $eq: ["$category.discountType", "fixed"] },
+                ],
+              },
+              { $lte: ["$category.discountStartDate", new Date()] },
+              { $gte: ["$category.discountEndDate", new Date()] },
+            ],
+          },
+          "$category.discountName",
+          null,
+        ],
+      },
+    },
+  },
+  {
+    $addFields: {
+      effectiveDiscount: {
+        $max: ["$productDiscount", "$categoryDiscount"],
+      },
+      appliedDiscountName: {
+        $cond: [
+          { $gt: ["$productDiscount", "$categoryDiscount"] },
+          "$productDiscountName",
+          {
+            $cond: [
+              { $gt: ["$categoryDiscount", "$productDiscount"] },
+              "$categoryDiscountName",
+              null,
+            ],
+          },
+        ],
+      },
+      finalPrice: {
+        $subtract: [
+          "$price",
+          { $max: ["$productDiscount", "$categoryDiscount"] },
+        ],
+      },
+    },
+  },
+];
+
+export const singleProductProjection = {
+  $project: {
+    name: 1,
+    description: 1,
+    price: 1,
+    images: 1,
+    avgRating: 1,
+    isDeleted: 1,
+    specifications: 1,
+    productDiscount: 1,
+    categoryDiscount: 1,
+    effectiveDiscount: 1,
+    finalPrice: 1,
+    appliedDiscountName: 1,
+    "category.name": 1,
+    stock: 1,
+  },
+};
+
 // get a product by its ID
 export const getProduct: RequestHandler<{ id: string }> = async (
   req,
@@ -32,6 +173,33 @@ export const getProduct: RequestHandler<{ id: string }> = async (
       productId,
       productProjection
     ).populate(populateCategory());
+    // const foundProduct = await Product.aggregate([
+    // Add a match stage for searching
+    //   {
+    //     $match: {
+    //       _id: new mongoose.Types.ObjectId(productId),
+    //     },
+    //   },
+    //   {
+    //     $lookup: {
+    //       from: "categories", // Collection name for categories
+    //       localField: "category",
+    //       foreignField: "_id",
+    //       as: "category",
+    //     },
+    //   },
+    //   {
+    //     $unwind: {
+    //       path: "$category",
+    //       preserveNullAndEmptyArrays: true, // Allow products without a category
+    //     },
+    //   },
+    //   ...finalPriceCalculationAggregation,
+    //   singleProductProjection,
+    // ]);
+    // const foundProduct = await Product.findById(productId).populate("category");
+    console.log(productId);
+    console.log(foundProduct);
 
     if (!foundProduct?.isDeleted) {
       res.status(200).json({
@@ -97,7 +265,6 @@ export const getProducts: RequestHandler<
     sortBy: string;
     limit: string;
     q: string;
-    // filterField: string;
   }
 > = async (req, res, next) => {
   const {
@@ -105,7 +272,6 @@ export const getProducts: RequestHandler<
     sort = "asc",
     limit = "10",
     q = "",
-    // filterField,
     sortBy = "createdAt",
   } = req.query;
 
@@ -142,11 +308,67 @@ export const getProducts: RequestHandler<
         { description: { $regex: q, $options: "i" } },
       ],
     })
+      .populate(populateCategory())
       .sort({ [sortBy]: sortOrder })
       .skip((pageNum - 1) * limitNum)
       .limit(limitNum)
-      .populate(populateCategory())
       .exec();
+
+    // const foundProducts = await Product.aggregate([
+    //   // Add a match stage for searching
+    //   {
+    //     $match: {
+    //       $or: [
+    //         { name: { $regex: q, $options: "i" } },
+    //         { description: { $regex: q, $options: "i" } },
+    //       ], // Search by name and description (case-insensitive)
+    //     },
+    //   },
+    //   {
+    //     $lookup: {
+    //       from: "categories", // Collection name for categories
+    //       localField: "category",
+    //       foreignField: "_id",
+    //       as: "category",
+    //     },
+    //   },
+    //   {
+    //     $unwind: {
+    //       path: "$category",
+    //       preserveNullAndEmptyArrays: true, // Allow products without a category
+    //     },
+    //   },
+    //   ...finalPriceCalculationAggregation,
+    //   // Sort based on query parameters
+    //   {
+    //     $sort: {
+    //       [sortBy]: sortOrder,
+    //     },
+    //   },
+    //   // Add pagination
+    //   {
+    //     $skip: (pageNum - 1) * limitNum,
+    //   },
+    //   {
+    //     $limit: limitNum,
+    //   },
+    //   {
+    //     $project: {
+    //       name: 1,
+    //       price: 1,
+    //       images: 1,
+    //       productDiscount: 1,
+    //       avgRating: 1,
+    //       categoryDiscount: 1,
+    //       effectiveDiscount: 1,
+    //       finalPrice: 1,
+    //       appliedDiscountName: 1,
+    //       "category.name": 1,
+    //     },
+    //   },
+    // ]);
+    console.log(foundProducts);
+
     res.status(200).json({
       success: true,
       data: foundProducts,
@@ -196,20 +418,49 @@ export const getRelatedProducts: RequestHandler<
       });
       return;
     }
-    const relatedProducts = await Product.find(
-      {
-        _id: { $ne: id },
-        isDeleted: { $ne: true },
-        $or: [
-          { category: currentProduct.category },
-          { brand: currentProduct.brand },
-        ],
-      },
-      productProjection
-    )
+
+    const relatedProducts = await Product.find({
+      _id: { $ne: id },
+      isDeleted: { $ne: true },
+      $or: [
+        { category: currentProduct.category },
+        { brand: currentProduct.brand },
+      ],
+    })
       .limit(limit)
-      .populate("category")
-      .exec();
+      .populate(
+        "category",
+        "name discountType discountValue discountName discountStartDate discountEndDate"
+      );
+
+    // const relatedProducts = await Product.aggregate([
+    //   {
+    //     _id: { $ne: id },
+    //     isDeleted: { $ne: true },
+    //     $or: [
+    //       { category: currentProduct.category },
+    //       { brand: currentProduct.brand },
+    //     ],
+    //   },
+    //   productProjection
+    // ]
+    //   .limit(limit)
+    //   .populate("category")
+    //   .exec();
+
+    // const relatedProducts = await Product.aggregate([
+    //   {
+    //     $match: {
+    //       _id: { $ne: new mongoose.Types.ObjectId(id) },
+    //       isDeleted: { $ne: true },
+    //       $or: [
+    //         { category: currentProduct.category },
+    //         { brand: currentProduct.brand },
+    //       ],
+    //     },
+    //     $limit: limit,
+    //   },
+    // ]);
 
     res.status(200).json({
       success: true,

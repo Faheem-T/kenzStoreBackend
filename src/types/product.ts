@@ -19,12 +19,13 @@ export interface ProductType {
   isDeleted: boolean;
 
   // discount related fields
+  discountName?: string;
   discountType?: "percentage" | "fixed";
   discountValue?: number;
   discountStartDate?: Date;
   discountEndDate?: Date;
   // discount virtuals
-  isDiscountActive: boolean;
+  // isDiscountActive: boolean;
   finalPrice: number;
 
   // ratings related fields

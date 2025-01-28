@@ -76,6 +76,9 @@ const ProductSchema = new mongoose.Schema<IProduct>(
     ],
 
     // Discount Related fields
+    discountName: {
+      type: String,
+    },
     discountType: {
       type: String,
       enum: {
@@ -148,23 +151,63 @@ const ProductSchema = new mongoose.Schema<IProduct>(
   }
 );
 
-ProductSchema.virtual("isDiscountActive").get(function () {
-  const { discountStartDate, discountEndDate } = this;
-  if (!discountStartDate || !discountEndDate) {
-    return false;
-  }
-  return calculateDiscountActive({ discountEndDate, discountStartDate });
-});
+// ProductSchema.virtual("isDiscountActive").get(function () {
+//   const { discountStartDate, discountEndDate } = this;
+//   if (!discountStartDate || !discountEndDate) {
+//     return false;
+//   }
+//   return calculateDiscountActive({ discountEndDate, discountStartDate });
+// });
+
+// ProductSchema.virtual("finalPrice").get(function () {
+//   if (!this.discountType || !this.discountValue || !this.isDiscountActive) {
+//     return this.price;
+//   }
+//   return calculateDiscount({
+//     price: this.price,
+//     discountType: this.discountType,
+//     discountValue: this.discountValue,
+//   });
+// });
 
 ProductSchema.virtual("finalPrice").get(function () {
-  if (!this.discountType || !this.discountValue || !this.isDiscountActive) {
-    return this.price;
+  const now = new Date();
+
+  // Check if product discount is active
+  let productDiscount = 0;
+  if (
+    this.discountType &&
+    this.discountValue &&
+    this.discountStartDate &&
+    this.discountEndDate &&
+    this.discountStartDate <= now &&
+    this.discountEndDate >= now
+  ) {
+    if (this.discountType === "percentage") {
+      productDiscount = (this.discountValue / 100) * this.price;
+    } else if (this.discountType === "fixed") {
+      productDiscount = this.discountValue;
+    }
   }
-  return calculateDiscount({
-    price: this.price,
-    discountType: this.discountType,
-    discountValue: this.discountValue,
-  });
+
+  // Placeholder for category discount (requires preloaded category)
+  let categoryDiscount = 0;
+  if (this.category && this.category.discountType) {
+    if (
+      this.category.discountStartDate <= now &&
+      this.category.discountEndDate >= now
+    ) {
+      if (this.category.discountType === "percentage") {
+        categoryDiscount = (this.category.discountValue / 100) * this.price;
+      } else if (this.category.discountType === "fixed") {
+        categoryDiscount = this.category.discountValue;
+      }
+    }
+  }
+
+  // Calculate the effective discount and final price
+  const effectiveDiscount = Math.max(productDiscount, categoryDiscount);
+  return this.price - effectiveDiscount;
 });
 
 export const Product = mongoose.model("Product", ProductSchema);

@@ -197,7 +197,6 @@ const validateCart = async (
         ProductType,
         | "_id"
         | "stock"
-        | "isDiscountActive"
         | "discountType"
         | "discountValue"
         | "price"
@@ -206,14 +205,21 @@ const validateCart = async (
         | "listed"
         | "discountStartDate"
         | "discountEndDate"
+        | "category"
       >;
       price: number;
       quantity: number;
     }[];
-  }>(
-    "items.productId",
-    "_id stock discountStartDate discountEndDate isDiscountActive discountType discountValue price finalPrice isDeleted listed"
-  );
+  }>({
+    path: "items.productId",
+
+    select:
+      "_id stock discountStartDate discountEndDate isDiscountActive discountType discountValue price finalPrice isDeleted listed category",
+    populate: {
+      path: "category",
+    },
+  });
+  console.log("Cart Items:");
   console.log(cart?.items.map((item) => item.productId));
 
   if (!cart) {
