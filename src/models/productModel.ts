@@ -170,7 +170,7 @@ const ProductSchema = new mongoose.Schema<IProduct>(
 //   });
 // });
 
-ProductSchema.virtual("finalPrice").get(function () {
+ProductSchema.virtual("effectiveDiscount").get(function () {
   const now = new Date();
 
   // Check if product discount is active
@@ -206,8 +206,36 @@ ProductSchema.virtual("finalPrice").get(function () {
   }
 
   // Calculate the effective discount and final price
-  const effectiveDiscount = Math.max(productDiscount, categoryDiscount);
-  return this.price - effectiveDiscount;
+  // const effectiveDiscount = Math.max(productDiscount, categoryDiscount);
+
+  if (productDiscount > categoryDiscount) {
+    return {
+      name: this.discountName,
+      type: this.discountType,
+      value: this.discountValue,
+      startDate: this.discountStartDate,
+      endDate: this.discountEndDate,
+      discountApplied: productDiscount,
+    };
+  } else if (categoryDiscount > productDiscount) {
+    return {
+      name: this.category.discountName,
+      type: this.category.discountType,
+      value: this.category.discountValue,
+      startDate: this.category.discountStartDate,
+      endDate: this.category.discountEndDate,
+      discountApplied: categoryDiscount,
+    };
+  } else {
+    return null;
+  }
+});
+
+ProductSchema.virtual("finalPrice").get(function () {
+  return this.effectiveDiscount
+    ? Math.round((this.price - this.effectiveDiscount.discountApplied) * 100) /
+        100
+    : this.price;
 });
 
 export const Product = mongoose.model("Product", ProductSchema);

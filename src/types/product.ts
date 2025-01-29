@@ -25,8 +25,16 @@ export interface ProductType {
   discountStartDate?: Date;
   discountEndDate?: Date;
   // discount virtuals
-  // isDiscountActive: boolean;
+  effectiveDiscount: {
+    name: string;
+    type: "percentage" | "fixed";
+    value: number;
+    startDate: Date;
+    endDate: Date;
+    discountApplied: number;
+  } | null;
   finalPrice: number;
+  // isDiscountActive: boolean;
 
   // ratings related fields
   ratingsCount: number;
