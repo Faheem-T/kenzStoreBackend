@@ -4,10 +4,11 @@ export interface CouponType {
   name: string;
   code: string;
   discountPercentage: number;
-  description?: string;
-  totalUsedCount: number;
   limitPerUser: number;
+  minOrderAmount: number;
+  description?: string;
   validUntil?: Date;
+  totalUsedCount: number;
   redeemedUsers: mongoose.Schema.Types.ObjectId[]; // ObjectIds
 
   // deletion indicator
@@ -28,6 +29,7 @@ export type CreateCouponType = Pick<
   | "discountPercentage"
   | "limitPerUser"
   | "validUntil"
+  | "minOrderAmount"
 >;
 
 export type UpdateCouponType = Partial<CreateCouponType>;

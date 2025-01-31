@@ -15,6 +15,7 @@ export const createCoupon: AdminRequestHandler<
     limitPerUser,
     validUntil,
     discountPercentage,
+    minOrderAmount,
   } = req.body;
 
   try {
@@ -34,6 +35,7 @@ export const createCoupon: AdminRequestHandler<
       description,
       limitPerUser,
       validUntil,
+      minOrderAmount,
     });
 
     res.status(200).json({

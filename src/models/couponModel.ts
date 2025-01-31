@@ -32,6 +32,10 @@ const couponSchema = new mongoose.Schema<ICoupon>(
       type: Date,
       //   required: true,
     },
+    minOrderAmount: {
+      type: Number,
+      default: 0,
+    },
     redeemedUsers: {
       type: [
         {
