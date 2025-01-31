@@ -92,7 +92,7 @@ export const getAllOfferProducts: AdminRequestHandler = async (
   try {
     const foundProductOffers = await Product.find({
       discountEndDate: { $gt: new Date() },
-      discountStartDate: { $lt: new Date() },
+      // discountStartDate: { $lt: new Date() },
     });
     res.status(200).json({
       success: true,
@@ -111,11 +111,87 @@ export const getAllOfferCategories: AdminRequestHandler = async (
   try {
     const foundCategoryOffers = await Category.find({
       discountEndDate: { $gt: new Date() },
-      discountStartDate: { $lt: new Date() },
+      // discountStartDate: { $lt: new Date() },
     });
     res.status(200).json({
       success: true,
       data: foundCategoryOffers,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const deleteProductOffer: AdminRequestHandler<{
+  productId: string;
+}> = async (req, res, next) => {
+  const productId = req.params.productId;
+  if (!productId) {
+    res.status(400).json({
+      success: false,
+      message: "'productId' is required",
+    });
+    return;
+  }
+
+  try {
+    const foundProduct = await Product.findByIdAndUpdate(
+      productId,
+      {
+        discountName: "",
+        discountType: "",
+        discountValue: 0,
+        discountStartDate: null,
+        discountEndDate: null,
+      },
+      { new: true }
+    );
+    if (!foundProduct) {
+      res.status(400).json({
+        success: false,
+        message: "Product not found",
+      });
+      return;
+    }
+    res.status(200).json({
+      success: true,
+      message: "Product offer deleted successfully",
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const deleteCategoryOffer: AdminRequestHandler<{
+  categoryId: string;
+}> = async (req, res, next) => {
+  const categoryId = req.params.categoryId;
+  if (!categoryId) {
+    res.status(400).json({
+      success: false,
+      message: "'categoryId' is required",
+    });
+    return;
+  }
+
+  try {
+    const foundCategory = await Category.findByIdAndUpdate(categoryId, {
+      discountName: "",
+      discountType: "",
+      discountValue: 0,
+      discountStartDate: null,
+      discountEndDate: null,
+    });
+    if (!foundCategory) {
+      res.status(400).json({
+        success: false,
+        message: "Category not found",
+      });
+      return;
+    }
+    res.status(200).json({
+      success: true,
+      message: "Category offer deleted successfully",
     });
   } catch (error) {
     next(error);

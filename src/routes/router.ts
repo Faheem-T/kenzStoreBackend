@@ -8,7 +8,7 @@ import { userRouter } from "./userRoutes/userRouter";
 import { addressesRouter } from "./addressesRouter";
 import { cartRouter } from "./cartRouter";
 import { orderRouter } from "./orderRouter";
-import { offerRoutes } from "./offerRoutes";
+import { offerRoutes } from "./offerRouter";
 
 // v1/
 export const rootRouter = Router()
