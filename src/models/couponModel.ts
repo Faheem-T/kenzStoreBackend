@@ -13,6 +13,12 @@ const couponSchema = new mongoose.Schema<ICoupon>(
       type: String,
       required: true,
     },
+    discountPercentage: {
+      type: Number,
+      min: [0, "Discount percentage cannot be less than 0"],
+      max: [100, "Discount percentage cannot be more than 100"],
+      required: true,
+    },
     description: String,
     totalUsedCount: {
       type: Number,
@@ -24,7 +30,7 @@ const couponSchema = new mongoose.Schema<ICoupon>(
     },
     validUntil: {
       type: Date,
-      required: true,
+      //   required: true,
     },
     redeemedUsers: {
       type: [
@@ -44,7 +50,9 @@ const couponSchema = new mongoose.Schema<ICoupon>(
 );
 
 couponSchema.virtual("isValid").get(function () {
-  return !this.isDeleted && this.validUntil > new Date();
+  return (
+    !this.isDeleted && (this.validUntil ? this.validUntil > new Date() : true)
+  );
 });
 
 export const Coupon = mongoose.model("Coupon", couponSchema);

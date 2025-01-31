@@ -3,6 +3,7 @@ import {
   createCoupon,
   deleteCoupon,
   getAllCoupons,
+  updateCoupon,
 } from "../controllers/couponController";
 import { adminAccessMiddleware } from "../middlewares/adminAccessMiddleware";
 
@@ -10,4 +11,5 @@ import { adminAccessMiddleware } from "../middlewares/adminAccessMiddleware";
 export const couponRouter = Router()
   .get("/", adminAccessMiddleware, getAllCoupons)
   .post("/", adminAccessMiddleware, createCoupon)
-  .delete("/:couponId", adminAccessMiddleware, deleteCoupon);
+  .delete("/:couponId", adminAccessMiddleware, deleteCoupon)
+  .patch("/:couponId", adminAccessMiddleware, updateCoupon);

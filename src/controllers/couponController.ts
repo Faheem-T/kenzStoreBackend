@@ -1,20 +1,21 @@
 import { Coupon } from "../models/couponModel";
 import { AdminRequestHandler } from "../types/authenticatedRequest";
+import { CreateCouponType, UpdateCouponType } from "../types/coupon";
 
 // POST v1/coupons
-interface CreateCouponBody {
-  name: string;
-  code: string;
-  description?: string;
-  limitPerUser: number;
-  validUntil: string; // Date
-}
 export const createCoupon: AdminRequestHandler<
   {},
   {},
-  CreateCouponBody
+  CreateCouponType
 > = async (req, res, next) => {
-  const { name, code, description, limitPerUser, validUntil } = req.body;
+  const {
+    name,
+    code,
+    description,
+    limitPerUser,
+    validUntil,
+    discountPercentage,
+  } = req.body;
 
   try {
     const foundCoupons = await Coupon.find({ code });
@@ -29,6 +30,7 @@ export const createCoupon: AdminRequestHandler<
     await Coupon.create({
       name,
       code,
+      discountPercentage,
       description,
       limitPerUser,
       validUntil,
@@ -94,6 +96,42 @@ export const getAllCoupons: AdminRequestHandler = async (req, res, next) => {
     res.status(200).json({
       success: true,
       data: foundCoupons,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// PATCH v1/coupons/:couponId
+export const updateCoupon: AdminRequestHandler<
+  { couponId: string },
+  {},
+  UpdateCouponType
+> = async (req, res, next) => {
+  const couponId = req.params.couponId;
+  const patch = req.body;
+  if (!couponId) {
+    res.status(400).json({
+      success: false,
+      message: "'couponId' is required",
+    });
+    return;
+  }
+
+  try {
+    const updatedCoupon = await Coupon.findByIdAndUpdate(couponId, patch, {
+      new: true,
+    });
+    if (!updatedCoupon) {
+      res.status(400).json({
+        success: false,
+        message: "Couldn't update coupon",
+      });
+      return;
+    }
+    res.status(200).json({
+      success: true,
+      message: "Coupon has been updated.",
     });
   } catch (error) {
     next(error);
