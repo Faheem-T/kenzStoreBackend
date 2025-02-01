@@ -1,3 +1,4 @@
+import { Cart } from "../models/cartModel";
 import { Coupon } from "../models/couponModel";
 import {
   AdminRequestHandler,
@@ -143,5 +144,47 @@ export const updateCoupon: AdminRequestHandler<
   }
 };
 
-// GET v1/coupons/user/applicable
-export const getApplicableCoupons: UserRequestHandler = (req, res, next) => {};
+// GET v1/coupons/users/applicable
+export const getApplicableCoupons: UserRequestHandler = async (
+  req,
+  res,
+  next
+) => {
+  const userId = req.userId as string;
+  try {
+    const userCart = await Cart.findOne({ userId });
+    if (!userCart) {
+      res.status(400).json({
+        success: false,
+        message: "Couldn't find cart",
+      });
+      return;
+    }
+    const cartTotal = userCart.items.reduce(
+      (acc, item) => acc + item.price * item.quantity,
+      0
+    );
+    console.log(cartTotal);
+    const applicableCoupons = await Coupon.find(
+      {
+        minOrderAmount: { $lte: cartTotal },
+        isDeleted: { $ne: true },
+        validUntil: { $not: { $lt: new Date() } },
+      },
+      {
+        name: 1,
+        code: 1,
+        description: 1,
+        discountPercentage: 1,
+        validUntil: 1,
+        minOrderAmount: 1,
+      }
+    );
+    res.status(200).json({
+      success: true,
+      data: applicableCoupons,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
