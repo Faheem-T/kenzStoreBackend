@@ -1,6 +1,8 @@
 import mongoose from "mongoose";
 
+// SHARED TYPE: Sync with frontend
 export interface CouponType {
+  _id: mongoose.Schema.Types.ObjectId;
   name: string;
   code: string;
   discountPercentage: number;
@@ -20,7 +22,7 @@ export interface CouponType {
   createdAt: Date;
   updatedAt: Date;
 }
-
+// SHARED TYPE: Sync with frontend
 export type CreateCouponType = Pick<
   CouponType,
   | "name"
@@ -31,5 +33,5 @@ export type CreateCouponType = Pick<
   | "validUntil"
   | "minOrderAmount"
 >;
-
+// SHARED TYPE: Sync with frontend
 export type UpdateCouponType = Partial<CreateCouponType>;
