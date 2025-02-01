@@ -7,7 +7,7 @@ interface AdminRequest {
   adminId: string;
 }
 
-export type AuthenticatedRequestHandler<
+export type UserRequestHandler<
   P = {},
   resBody = {},
   reqBody = {},

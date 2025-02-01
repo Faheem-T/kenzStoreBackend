@@ -1,7 +1,7 @@
-import { AuthenticatedRequestHandler } from "../types/authenticatedRequest";
+import { UserRequestHandler } from "../types/authenticatedRequest";
 import { verifyAccessToken } from "../utils/authJwtHelper";
 
-export const userAccessMiddleware: AuthenticatedRequestHandler = async (
+export const userAccessMiddleware: UserRequestHandler = async (
   req,
   res,
   next

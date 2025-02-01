@@ -1,5 +1,8 @@
 import { Coupon } from "../models/couponModel";
-import { AdminRequestHandler } from "../types/authenticatedRequest";
+import {
+  AdminRequestHandler,
+  UserRequestHandler,
+} from "../types/authenticatedRequest";
 import { CreateCouponType, UpdateCouponType } from "../types/coupon";
 
 // POST v1/coupons
@@ -139,3 +142,6 @@ export const updateCoupon: AdminRequestHandler<
     next(error);
   }
 };
+
+// GET v1/coupons/user/applicable
+export const getApplicableCoupons: UserRequestHandler = (req, res, next) => {};

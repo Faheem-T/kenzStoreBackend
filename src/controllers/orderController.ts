@@ -1,6 +1,6 @@
 import {
   AdminRequestHandler,
-  AuthenticatedRequestHandler,
+  UserRequestHandler,
 } from "../types/authenticatedRequest";
 import { Order } from "../models/orderModel";
 import {
@@ -44,7 +44,7 @@ class CartValidationError extends Error {
   }
 }
 
-export const placeOrder: AuthenticatedRequestHandler<
+export const placeOrder: UserRequestHandler<
   {},
   PlaceOrderResponse,
   PlaceOrderType
@@ -273,7 +273,7 @@ const validateCart = async (
   return cart;
 };
 
-export const cancelOrder: AuthenticatedRequestHandler<{
+export const cancelOrder: UserRequestHandler<{
   orderId: string;
 }> = async (req, res, next) => {
   const orderId = req.params.orderId;
@@ -324,7 +324,7 @@ export const cancelOrder: AuthenticatedRequestHandler<{
   }
 };
 
-export const getAllUsersOrders: AuthenticatedRequestHandler<
+export const getAllUsersOrders: UserRequestHandler<
   {},
   BaseResponse<GetUserOrder[]>
 > = async (req, res, next) => {
@@ -351,7 +351,7 @@ export const getAllUsersOrders: AuthenticatedRequestHandler<
   }
 };
 
-export const getOrder: AuthenticatedRequestHandler<{
+export const getOrder: UserRequestHandler<{
   orderId: string;
 }> = async (req, res, next) => {
   const orderId = req.params.orderId;

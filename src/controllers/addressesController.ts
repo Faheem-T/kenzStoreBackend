@@ -1,15 +1,16 @@
 import { Address } from "../models/addressModel";
-import { AuthenticatedRequestHandler } from "../types/authenticatedRequest";
+import { UserRequestHandler } from "../types/authenticatedRequest";
 import { AddressType } from "../types/address";
 import { BaseResponse } from "../types/baseResponse";
 
 // GET addresses/user
 interface getUserResBody extends BaseResponse<AddressType[]> {}
 
-export const getUserAddresses: AuthenticatedRequestHandler<
-  {},
-  getUserResBody
-> = async (req, res, next) => {
+export const getUserAddresses: UserRequestHandler<{}, getUserResBody> = async (
+  req,
+  res,
+  next
+) => {
   const userId = req.userId;
   if (!userId) {
     res.status(400).json({
@@ -37,11 +38,7 @@ export const getUserAddresses: AuthenticatedRequestHandler<
 };
 
 // POST addresses/user
-export const postUserAddress: AuthenticatedRequestHandler = async (
-  req,
-  res,
-  next
-) => {
+export const postUserAddress: UserRequestHandler = async (req, res, next) => {
   const userId = req.userId;
   if (!userId) {
     res.status(400).json({
@@ -62,7 +59,7 @@ export const postUserAddress: AuthenticatedRequestHandler = async (
 };
 
 // PATCH addresses/:addressId/setDefault
-export const setDefaultAddress: AuthenticatedRequestHandler<{
+export const setDefaultAddress: UserRequestHandler<{
   addressId: string;
 }> = async (req, res, next) => {
   const addressId = req.params.addressId;
@@ -108,7 +105,7 @@ export const setDefaultAddress: AuthenticatedRequestHandler<{
 };
 
 // PATCH addresses/:addressId
-export const updateAddress: AuthenticatedRequestHandler<{
+export const updateAddress: UserRequestHandler<{
   addressId: string;
 }> = async (req, res, next) => {
   const addressId = req.params.addressId;
@@ -144,7 +141,7 @@ export const updateAddress: AuthenticatedRequestHandler<{
 };
 
 // DELETE addresses/:addressId
-export const deleteAddress: AuthenticatedRequestHandler<{
+export const deleteAddress: UserRequestHandler<{
   addressId: string;
 }> = async (req, res, next) => {
   const addressId = req.params.addressId;

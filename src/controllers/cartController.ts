@@ -1,10 +1,10 @@
 import mongoose from "mongoose";
 import { Cart } from "../models/cartModel";
 import { Product } from "../models/productModel";
-import { AuthenticatedRequestHandler } from "../types/authenticatedRequest";
+import { UserRequestHandler } from "../types/authenticatedRequest";
 import { ProductType } from "../types/product";
 
-export const addProductToCart: AuthenticatedRequestHandler<
+export const addProductToCart: UserRequestHandler<
   {},
   any,
   { productId: string; quantity?: number }
@@ -123,7 +123,7 @@ export const addProductToCart: AuthenticatedRequestHandler<
   }
 };
 
-export const getCart: AuthenticatedRequestHandler = async (req, res, next) => {
+export const getCart: UserRequestHandler = async (req, res, next) => {
   const userId = req.userId as string;
   try {
     const cart = await Cart.findOne({ userId }).populate({
@@ -245,11 +245,7 @@ export const getCart: AuthenticatedRequestHandler = async (req, res, next) => {
   }
 };
 
-export const getMinimalCart: AuthenticatedRequestHandler = async (
-  req,
-  res,
-  next
-) => {
+export const getMinimalCart: UserRequestHandler = async (req, res, next) => {
   const userId = req.userId as string;
   try {
     const cart = await Cart.findOne({ userId });
@@ -269,7 +265,7 @@ export const getMinimalCart: AuthenticatedRequestHandler = async (
   }
 };
 
-export const deleteProductFromCart: AuthenticatedRequestHandler<{
+export const deleteProductFromCart: UserRequestHandler<{
   productId: string;
 }> = async (req, res, next) => {
   const userId = req.userId as string;
@@ -296,11 +292,7 @@ export const deleteProductFromCart: AuthenticatedRequestHandler<{
   }
 };
 
-export const clearCart: AuthenticatedRequestHandler = async (
-  req,
-  res,
-  next
-) => {
+export const clearCart: UserRequestHandler = async (req, res, next) => {
   const userId = req.userId as string;
   try {
     const clearedCart = await Cart.findOneAndUpdate({ userId }, { items: [] });

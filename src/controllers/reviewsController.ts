@@ -2,7 +2,7 @@ import { RequestHandler } from "express";
 import { Review } from "../models/reviewModel";
 import { postProductReviewBodyType } from "../types/requestBodyTypes";
 import { Product } from "../models/productModel";
-import { AuthenticatedRequestHandler } from "../types/authenticatedRequest";
+import { UserRequestHandler } from "../types/authenticatedRequest";
 
 export const getReview: RequestHandler<{ id: string }> = async (
   req,
@@ -21,7 +21,7 @@ export const getReview: RequestHandler<{ id: string }> = async (
   }
 };
 
-export const getProductReviews: AuthenticatedRequestHandler<{
+export const getProductReviews: UserRequestHandler<{
   productId: string;
 }> = async (req, res, next) => {
   const { productId } = req.params;
@@ -69,7 +69,7 @@ export const getProductReviews: AuthenticatedRequestHandler<{
 };
 
 // TODO validate data
-export const postProductReview: AuthenticatedRequestHandler<
+export const postProductReview: UserRequestHandler<
   { productId: string },
   any,
   postProductReviewBodyType
