@@ -245,6 +245,10 @@ export const applyCouponToCart: UserRequestHandler<
     coupon.totalUsedCount += 1;
     coupon.redeemedUsers.push(new mongoose.Schema.Types.ObjectId(userId));
     await cart.save();
+    res.status(200).json({
+      success: true,
+      message: "Coupon has bee applied successfully",
+    });
   } catch (error) {
     next(error);
   }
@@ -266,10 +270,31 @@ export const deleteCouponFromCart: UserRequestHandler = async (
       return;
     }
 
+    const coupon = await Coupon.findById(cart.coupon);
+    if (!coupon) {
+      res.status(400).json({
+        success: false,
+        message: "Couldn't find applied coupon",
+      });
+      return;
+    }
+
+    // revert changes made to coupon
+    coupon.totalUsedCount -= 1;
+    const index = coupon.redeemedUsers.indexOf(
+      new mongoose.Schema.Types.ObjectId(userId)
+    );
+    coupon.redeemedUsers.splice(index, 1);
+    coupon.save();
+
+    // discard coupon related data from cart
     cart.coupon = null;
     cart.discountType = null;
     cart.discountValue = 0;
     await cart.save();
+    res.status(200).json({
+      message: "Coupon deleted successfully",
+    });
   } catch (error) {
     next(error);
   }
