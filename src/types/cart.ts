@@ -7,6 +7,11 @@ export interface CartType {
   _id: mongoose.Schema.Types.ObjectId;
   userId: mongoose.Schema.Types.ObjectId;
   items: ItemType[];
+  coupon: mongoose.Schema.Types.ObjectId;
+  discountValue: number;
+  discountType: "percentage" | "fixed";
+  // virtual
+  cartTotal: number;
 }
 // SHARED TYPE: Sync with frontend
 export interface ProductPopulatedCartType extends Omit<CartType, "items"> {

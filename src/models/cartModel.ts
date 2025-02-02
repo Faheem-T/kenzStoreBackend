@@ -29,10 +29,34 @@ const cartSchema = new mongoose.Schema<ICart>(
         },
       },
     ],
+    coupon: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Coupon",
+      default: null,
+    },
+    discountValue: { type: Number, default: 0 },
+    discountType: {
+      type: String,
+      enum: ["percentage", "fixed"],
+      default: "percentage",
+    },
   },
   { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
 );
 
 cartSchema.index({ userId: 1, "items.productId": 1 });
 
+cartSchema.virtual("cartTotal").get(function () {
+  const total = this.items.reduce(
+    (acc, current) => acc + current.price * current.quantity,
+    0
+  );
+  let subTotal;
+  if (this.discountType === "fixed") {
+    subTotal = total - this.discountValue;
+  } else {
+    subTotal = total * (1 - this.discountValue / 100);
+  }
+  return Math.round(subTotal * 100) / 100;
+});
 export const Cart = mongoose.model("Cart", cartSchema);

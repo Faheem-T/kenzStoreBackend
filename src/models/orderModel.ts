@@ -29,6 +29,12 @@ const orderSchema = new mongoose.Schema<IOrder>(
         },
       },
     ],
+    coupon: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Coupon",
+      default: null,
+    },
+    discountAmount: { type: Number, default: 0 },
     status: {
       type: String,
       enum: ["pending", "completed", "cancelled"],

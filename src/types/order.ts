@@ -12,6 +12,8 @@ export interface OrderType {
     price: number;
     quantity: number;
   }[];
+  coupon: mongoose.Schema.Types.ObjectId; // ObjectId
+  discountAmount: number;
   status: OrderStatus;
   paymentMethod: PaymentMethod;
   address: Pick<
