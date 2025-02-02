@@ -5,7 +5,8 @@ export interface CouponType {
   _id: mongoose.Schema.Types.ObjectId;
   name: string;
   code: string;
-  discountPercentage: number;
+  discountType: "percentage" | "fixed";
+  discountValue: number;
   limitPerUser: number;
   minOrderAmount: number;
   description?: string;
@@ -28,7 +29,8 @@ export type CreateCouponType = Pick<
   | "name"
   | "code"
   | "description"
-  | "discountPercentage"
+  | "discountType"
+  | "discountValue"
   | "limitPerUser"
   | "validUntil"
   | "minOrderAmount"
