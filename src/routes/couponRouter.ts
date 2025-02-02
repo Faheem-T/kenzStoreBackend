@@ -1,7 +1,9 @@
 import { Router } from "express";
 import {
+  applyCouponToCart,
   createCoupon,
   deleteCoupon,
+  deleteCouponFromCart,
   getAllCoupons,
   getApplicableCoupons,
   updateCoupon,
@@ -15,4 +17,6 @@ export const couponRouter = Router()
   .post("/", adminAccessMiddleware, createCoupon)
   .delete("/:couponId", adminAccessMiddleware, deleteCoupon)
   .patch("/:couponId", adminAccessMiddleware, updateCoupon)
-  .get("/users/applicable", userAccessMiddleware, getApplicableCoupons);
+  .get("/users/applicable", userAccessMiddleware, getApplicableCoupons)
+  .post("/cart/apply", userAccessMiddleware, applyCouponToCart)
+  .delete("/cart", userAccessMiddleware, deleteCouponFromCart);

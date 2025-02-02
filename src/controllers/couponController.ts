@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import { Cart } from "../models/cartModel";
 import { Coupon } from "../models/couponModel";
 import {
@@ -18,7 +19,7 @@ export const createCoupon: AdminRequestHandler<
     description,
     limitPerUser,
     validUntil,
-    discountPercentage,
+    discountValue: discountPercentage,
     minOrderAmount,
   } = req.body;
 
@@ -35,7 +36,7 @@ export const createCoupon: AdminRequestHandler<
     await Coupon.create({
       name,
       code,
-      discountPercentage,
+      discountValue: discountPercentage,
       description,
       limitPerUser,
       validUntil,
@@ -160,14 +161,16 @@ export const getApplicableCoupons: UserRequestHandler = async (
       });
       return;
     }
-    const cartTotal = userCart.items.reduce(
-      (acc, item) => acc + item.price * item.quantity,
-      0
-    );
-    console.log(cartTotal);
+    if (userCart.discountValue !== 0) {
+      res.status(200).json({
+        success: true,
+        message: "A coupon is already applied",
+      });
+      return;
+    }
     const applicableCoupons = await Coupon.find(
       {
-        minOrderAmount: { $lte: cartTotal },
+        minOrderAmount: { $lte: userCart.cartTotal },
         isDeleted: { $ne: true },
         validUntil: { $not: { $lt: new Date() } },
       },
@@ -175,7 +178,7 @@ export const getApplicableCoupons: UserRequestHandler = async (
         name: 1,
         code: 1,
         description: 1,
-        discountPercentage: 1,
+        discountValue: 1,
         validUntil: 1,
         minOrderAmount: 1,
       }
@@ -184,6 +187,89 @@ export const getApplicableCoupons: UserRequestHandler = async (
       success: true,
       data: applicableCoupons,
     });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const applyCouponToCart: UserRequestHandler<
+  {},
+  any,
+  { code: string }
+> = async (req, res, next) => {
+  const userId = req.userId as string;
+  const code = req.body.code;
+  try {
+    const cart = await Cart.findOne({ userId });
+    if (!cart) {
+      res.status(400).json({
+        success: false,
+        message: "Cart not found!",
+      });
+      return;
+    }
+
+    const coupon = await Coupon.findOne({
+      code,
+      minOrderAmount: { $lte: cart.cartTotal },
+      isDeleted: { $ne: true },
+      validUntil: { $not: { $lt: new Date() } },
+    });
+
+    if (!coupon) {
+      res.status(400).json({
+        success: false,
+        message: "Couldn't find a valid coupon with that code",
+      });
+      return;
+    }
+
+    // checking if limit has been reached
+    const userUsedCount = coupon.redeemedUsers.filter(
+      (id) => String(id) === userId
+    ).length;
+    if (userUsedCount >= coupon.limitPerUser) {
+      res.status(400).json({
+        success: false,
+        message: "Limit has been reached",
+      });
+      return;
+    }
+
+    // update cart discount
+    cart.coupon = coupon._id;
+    cart.discountType = coupon.discountType;
+    cart.discountValue = coupon.discountValue;
+
+    // update coupon
+    coupon.totalUsedCount += 1;
+    coupon.redeemedUsers.push(new mongoose.Schema.Types.ObjectId(userId));
+    await cart.save();
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const deleteCouponFromCart: UserRequestHandler = async (
+  req,
+  res,
+  next
+) => {
+  const userId = req.userId as string;
+  try {
+    const cart = await Cart.findOne({ userId });
+    if (!cart) {
+      res.status(400).json({
+        success: false,
+        message: "Couldn't find cart",
+      });
+      return;
+    }
+
+    cart.coupon = null;
+    cart.discountType = null;
+    cart.discountValue = 0;
+    await cart.save();
   } catch (error) {
     next(error);
   }

@@ -7,9 +7,9 @@ export interface CartType {
   _id: mongoose.Schema.Types.ObjectId;
   userId: mongoose.Schema.Types.ObjectId;
   items: ItemType[];
-  coupon: mongoose.Schema.Types.ObjectId;
+  coupon: mongoose.Schema.Types.ObjectId | null;
   discountValue: number;
-  discountType: "percentage" | "fixed";
+  discountType: "percentage" | "fixed" | null;
   // virtual
   cartTotal: number;
 }
