@@ -18,5 +18,5 @@ export const couponRouter = Router()
   .delete("/:couponId", adminAccessMiddleware, deleteCoupon)
   .patch("/:couponId", adminAccessMiddleware, updateCoupon)
   .get("/users/applicable", userAccessMiddleware, getApplicableCoupons)
-  .post("/cart/apply", userAccessMiddleware, applyCouponToCart)
+  .post("/cart", userAccessMiddleware, applyCouponToCart)
   .delete("/cart", userAccessMiddleware, deleteCouponFromCart);
