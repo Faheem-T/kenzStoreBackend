@@ -14,7 +14,7 @@ export interface CartType {
   cartTotal: number;
 }
 // SHARED TYPE: Sync with frontend
-export interface ProductPopulatedCartType extends Omit<CartType, "items"> {
+export interface PopulatedCartType extends Omit<CartType, "items"> {
   items: ProductPopulatedItem[];
 }
 

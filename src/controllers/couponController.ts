@@ -164,6 +164,7 @@ export const getApplicableCoupons: UserRequestHandler = async (
     if (userCart.discountValue !== 0) {
       res.status(200).json({
         success: true,
+        data: [],
         message: "A coupon is already applied",
       });
       return;
@@ -240,11 +241,12 @@ export const applyCouponToCart: UserRequestHandler<
     cart.coupon = coupon._id;
     cart.discountType = coupon.discountType;
     cart.discountValue = coupon.discountValue;
+    await cart.save();
 
     // update coupon
     coupon.totalUsedCount += 1;
-    coupon.redeemedUsers.push(new mongoose.Schema.Types.ObjectId(userId));
-    await cart.save();
+    coupon.redeemedUsers.push(new mongoose.Types.ObjectId(userId));
+    await coupon.save();
     res.status(200).json({
       success: true,
       message: "Coupon has bee applied successfully",
@@ -282,7 +284,7 @@ export const deleteCouponFromCart: UserRequestHandler = async (
     // revert changes made to coupon
     coupon.totalUsedCount -= 1;
     const index = coupon.redeemedUsers.indexOf(
-      new mongoose.Schema.Types.ObjectId(userId)
+      new mongoose.Types.ObjectId(userId)
     );
     coupon.redeemedUsers.splice(index, 1);
     coupon.save();

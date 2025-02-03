@@ -12,7 +12,7 @@ export interface CouponType {
   description?: string;
   validUntil?: Date;
   totalUsedCount: number;
-  redeemedUsers: mongoose.Schema.Types.ObjectId[]; // ObjectIds
+  redeemedUsers: mongoose.Types.ObjectId[]; // ObjectIds
 
   // deletion indicator
   isDeleted: boolean;
@@ -26,14 +26,12 @@ export interface CouponType {
 // SHARED TYPE: Sync with frontend
 export type CreateCouponType = Pick<
   CouponType,
-  | "name"
-  | "code"
-  | "description"
-  | "discountType"
-  | "discountValue"
-  | "limitPerUser"
-  | "validUntil"
-  | "minOrderAmount"
->;
+  "name" | "code" | "description" | "discountValue"
+> & {
+  limitPerUser?: number;
+  validUntil?: Date;
+  minOrderAmount?: number;
+  discountType?: "percentage" | "fixed";
+};
 // SHARED TYPE: Sync with frontend
 export type UpdateCouponType = Partial<CreateCouponType>;

@@ -114,10 +114,12 @@ export const addProductToCart: UserRequestHandler<
 export const getCart: UserRequestHandler = async (req, res, next) => {
   const userId = req.userId as string;
   try {
-    const cart = await Cart.findOne({ userId }).populate({
-      path: "items.productId",
-      populate: { path: "category" },
-    });
+    const cart = await Cart.findOne({ userId })
+      .populate({
+        path: "items.productId",
+        populate: { path: "category" },
+      })
+      .populate("coupon", "_id name code");
     if (!cart) {
       res.status(400).json({
         success: false,
@@ -126,6 +128,8 @@ export const getCart: UserRequestHandler = async (req, res, next) => {
       return;
     }
 
+    console.log(cart);
+
     res.status(200).json({
       success: true,
       data: {
@@ -133,6 +137,9 @@ export const getCart: UserRequestHandler = async (req, res, next) => {
         userId: cart.userId,
         items: cart.items ?? [],
         cartTotal: cart.cartTotal,
+        coupon: cart.coupon,
+        discountValue: cart.discountValue,
+        discountType: cart.discountType,
       },
     });
   } catch (error) {
