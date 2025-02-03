@@ -10,6 +10,7 @@ import { cartRouter } from "./cartRouter";
 import { orderRouter } from "./orderRouter";
 import { offerRoutes } from "./offerRouter";
 import { couponRouter } from "./couponRouter";
+import { wishlistRouter } from "./wishlistRouter";
 
 // v1/
 export const rootRouter = Router()
@@ -23,4 +24,5 @@ export const rootRouter = Router()
   .use("/cart", cartRouter)
   .use("/orders", orderRouter)
   .use("/offers", offerRoutes)
-  .use("/coupons", couponRouter);
+  .use("/coupons", couponRouter)
+  .use("/wishlist", wishlistRouter);
