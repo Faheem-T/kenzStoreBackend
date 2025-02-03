@@ -13,10 +13,10 @@ import { userAccessMiddleware } from "../middlewares/userAccessMiddleware";
 
 // v1/coupons
 export const couponRouter = Router()
+  .delete("/cart", userAccessMiddleware, deleteCouponFromCart)
+  .get("/users/applicable", userAccessMiddleware, getApplicableCoupons)
   .get("/", adminAccessMiddleware, getAllCoupons)
   .post("/", adminAccessMiddleware, createCoupon)
-  .delete("/:couponId", adminAccessMiddleware, deleteCoupon)
-  .patch("/:couponId", adminAccessMiddleware, updateCoupon)
-  .get("/users/applicable", userAccessMiddleware, getApplicableCoupons)
   .post("/cart", userAccessMiddleware, applyCouponToCart)
-  .delete("/cart", userAccessMiddleware, deleteCouponFromCart);
+  .delete("/:couponId", adminAccessMiddleware, deleteCoupon)
+  .patch("/:couponId", adminAccessMiddleware, updateCoupon);

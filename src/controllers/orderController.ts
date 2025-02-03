@@ -19,6 +19,7 @@ import mongoose, { ObjectId } from "mongoose";
 import { AddressType } from "../types/address";
 import { BaseResponse } from "../types/baseResponse";
 import { ProductPopulatedItem } from "../types/item";
+import { CouponType } from "../types/coupon";
 
 // SHARED TYPE: Sync with frontend
 interface PlaceOrderResponse {
@@ -62,42 +63,27 @@ export const placeOrder: UserRequestHandler<
   const { cartId, addressId, paymentMethod } = req.body;
 
   try {
-    // // fetch address
-    // const foundAddress = await Address.findOne({ _id: addressId, userId });
-    // if (!foundAddress) {
-    //   res.status(400).json({
-    //     success: false,
-    //     message: "Address not found",
-    //   });
-    //   return;
-    // }
-
-    try {
-      const order = await processOrder({
-        cartId,
-        userId,
-        paymentMethod,
-        addressId,
-      });
-      res.status(200).json({
-        success: true,
-        message: "Order placed successfully",
-        data: { orderId: order.id },
-      });
-    } catch (error) {
-      if (error instanceof CartValidationError) {
-        res.status(400).json({
-          success: false,
-          message: error.message,
-          errors: error.validationErrors,
-        });
-      } else {
-        throw error;
-      }
-      return;
-    }
+    const order = await processOrder({
+      cartId,
+      userId,
+      paymentMethod,
+      addressId,
+    });
+    res.status(200).json({
+      success: true,
+      message: "Order placed successfully",
+      data: { orderId: order.id },
+    });
   } catch (error) {
-    next(error);
+    if (error instanceof CartValidationError) {
+      res.status(400).json({
+        success: false,
+        message: error.message,
+        errors: error.validationErrors,
+      });
+    } else {
+      next(error);
+    }
   }
 };
 
@@ -158,7 +144,10 @@ const processOrder = async ({
     };
 
     // empty the cart
-    await Cart.findOneAndUpdate({ userId, _id: cartId }, { items: [] });
+    await Cart.findOneAndUpdate(
+      { userId, _id: cartId },
+      { items: [], coupon: null, discountType: null, discountValue: 0 }
+    );
 
     // create order
     const order = await Order.create(
@@ -168,6 +157,9 @@ const processOrder = async ({
           items: cart.items,
           paymentMethod,
           address: orderAddress,
+          coupon: cart.coupon._id,
+          discountType: cart.discountType,
+          discountValue: cart.discountValue,
           // TODO Other order details
         },
       ],
@@ -190,40 +182,55 @@ const validateCart = async (
   userId: string
 ) => {
   // fetch cart
-  const cart = await Cart.findOne({ _id: cartId, userId }).populate<{
-    items: {
-      _id: mongoose.Schema.Types.ObjectId;
-      productId: Pick<
-        ProductType,
-        | "_id"
-        | "stock"
-        | "discountType"
-        | "discountValue"
-        | "price"
-        | "finalPrice"
-        | "isDeleted"
-        | "listed"
-        | "discountStartDate"
-        | "discountEndDate"
-        | "category"
-      >;
-      price: number;
-      quantity: number;
-    }[];
-  }>({
-    path: "items.productId",
+  const cart = await Cart.findOne({ _id: cartId, userId })
+    .populate<{
+      items: {
+        _id: mongoose.Schema.Types.ObjectId;
+        productId: Pick<
+          ProductType,
+          | "_id"
+          | "stock"
+          | "discountType"
+          | "discountValue"
+          | "price"
+          | "finalPrice"
+          | "isDeleted"
+          | "listed"
+          | "discountStartDate"
+          | "discountEndDate"
+          | "category"
+        >;
+        price: number;
+        quantity: number;
+      }[];
+    }>({
+      path: "items.productId",
 
-    select:
-      "_id stock discountStartDate discountEndDate isDiscountActive discountType discountValue price finalPrice isDeleted listed category",
-    populate: {
-      path: "category",
-    },
-  });
-  console.log("Cart Items:");
-  console.log(cart?.items.map((item) => item.productId));
+      select:
+        "_id stock discountStartDate discountEndDate isDiscountActive discountType discountValue price finalPrice isDeleted listed category",
+      populate: {
+        path: "category",
+      },
+    })
+    .populate<{ coupon: CouponType }>("coupon");
+  // console.log("Cart Items:");
+  // console.log(cart?.items.map((item) => item.productId));
 
   if (!cart) {
     throw new Error("Cart not found");
+  }
+
+  // validate applied coupon
+  if (cart.coupon) {
+    if (
+      cart.coupon.discountType !== cart.discountType ||
+      cart.coupon.discountValue !== cart.discountValue
+    ) {
+      throw new Error("Invalid coupon");
+    }
+    if (cart.coupon.validUntil && cart.coupon.validUntil < new Date()) {
+      throw new Error("Coupon has expired");
+    }
   }
 
   const items = cart.items;

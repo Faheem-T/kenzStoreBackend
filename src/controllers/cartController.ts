@@ -1,4 +1,5 @@
 import { Cart } from "../models/cartModel";
+import { Coupon } from "../models/couponModel";
 import { Product } from "../models/productModel";
 import { UserRequestHandler } from "../types/authenticatedRequest";
 
@@ -198,14 +199,28 @@ export const deleteProductFromCart: UserRequestHandler<{
 export const clearCart: UserRequestHandler = async (req, res, next) => {
   const userId = req.userId as string;
   try {
-    const clearedCart = await Cart.findOneAndUpdate({ userId }, { items: [] });
-    if (!clearedCart) {
+    const cart = await Cart.findOne({ userId });
+
+    if (!cart) {
       res.status(400).json({
         success: false,
         message: "Cart not found",
       });
       return;
     }
+
+    cart.items = [];
+    if (cart.coupon) {
+      await Coupon.findByIdAndUpdate(cart.coupon, {
+        $inc: { totalUsedCount: -1 },
+        $pull: { redeemedUsers: userId },
+      });
+      cart.coupon = null;
+      cart.discountType = null;
+      cart.discountValue = 0;
+    }
+    await cart.save();
+
     res.status(200).json({
       success: true,
       message: "Cart cleared successfully",

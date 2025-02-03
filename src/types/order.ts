@@ -13,7 +13,8 @@ export interface OrderType {
     quantity: number;
   }[];
   coupon: mongoose.Schema.Types.ObjectId; // ObjectId
-  discountAmount: number;
+  discountType: "percentage" | "fixed" | null;
+  discountValue: number;
   status: OrderStatus;
   paymentMethod: PaymentMethod;
   address: Pick<

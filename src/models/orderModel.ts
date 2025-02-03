@@ -34,7 +34,12 @@ const orderSchema = new mongoose.Schema<IOrder>(
       ref: "Coupon",
       default: null,
     },
-    discountAmount: { type: Number, default: 0 },
+    discountType: {
+      type: String,
+      enum: ["percentage", "fixed"],
+      default: null,
+    },
+    discountValue: { type: Number, default: 0 },
     status: {
       type: String,
       enum: ["pending", "completed", "cancelled"],
@@ -74,10 +79,19 @@ const orderSchema = new mongoose.Schema<IOrder>(
 );
 
 orderSchema.virtual("totalPrice").get(function () {
-  return this.items.reduce(
+  let total = this.items.reduce(
     (total, item) => total + item.price * item.quantity,
     0
   );
+
+  if (this.coupon && this.discountType && this.discountValue) {
+    if (this.discountType === "percentage") {
+      total = total * (1 - this.discountValue / 100);
+    } else {
+      total = total - this.discountValue;
+    }
+  }
+  return Math.max(total, 0);
 });
 
 export const Order = mongoose.model("Order", orderSchema);

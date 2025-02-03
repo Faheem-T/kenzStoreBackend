@@ -37,8 +37,8 @@ const cartSchema = new mongoose.Schema<ICart>(
     discountValue: { type: Number, default: 0 },
     discountType: {
       type: String,
-      enum: ["percentage", "fixed"],
-      default: "percentage",
+      enum: ["percentage", "fixed", null],
+      default: null,
     },
   },
   { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
