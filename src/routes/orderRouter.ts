@@ -8,12 +8,14 @@ import {
   getAllUsersOrders,
   getOrder,
   placeOrder,
+  verifyPayment,
 } from "../controllers/orderController";
 import { adminAccessMiddleware } from "../middlewares/adminAccessMiddleware";
 
 // v1/orders
 export const orderRouter = Router()
   .post("/", userAccessMiddleware, placeOrder)
+  .post("/verify", userAccessMiddleware, verifyPayment)
   .patch("/:orderId/cancel", userAccessMiddleware, cancelOrder)
   .get("/", userAccessMiddleware, getAllUsersOrders)
   .get("/admin", adminAccessMiddleware, getAllOrders) // Admin only

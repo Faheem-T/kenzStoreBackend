@@ -20,12 +20,14 @@ import { AddressType } from "../types/address";
 import { BaseResponse } from "../types/baseResponse";
 import { ProductPopulatedItem } from "../types/item";
 import { CouponType } from "../types/coupon";
+import { createRazorpayOrder } from "../utils/razorpay";
+import { Orders } from "razorpay/dist/types/orders";
 
 // SHARED TYPE: Sync with frontend
 interface PlaceOrderResponse {
   success: boolean;
   message: string;
-  data?: { orderId: string };
+  data?: { orderId: string; razorpayOrder: Orders.RazorpayOrder | null };
   errors?: CartValidationErrorType[];
 }
 // SHARED TYPE: Sync with frontend
@@ -69,10 +71,19 @@ export const placeOrder: UserRequestHandler<
       paymentMethod,
       addressId,
     });
+
+    // let ROrder = null;
+    // if (paymentMethod !== "COD") {
+    //   ROrder = await createRazorpayOrder(order.totalPrice);
+    // }
+
     res.status(200).json({
       success: true,
-      message: "Order placed successfully",
-      data: { orderId: order.id },
+      data: { orderId: order.id, razorpayOrder: order.paymentOrder },
+      message:
+        paymentMethod === "COD"
+          ? "Order placed successfully. Please prepare payment on delivery"
+          : "Order created. Proceed to payment",
     });
   } catch (error) {
     if (error instanceof CartValidationError) {
@@ -143,6 +154,11 @@ const processOrder = async ({
       landmark: foundAddress.landmark,
     };
 
+    // create payment order according to payment method
+    let ROrder = null;
+    if (paymentMethod !== "COD") {
+      ROrder = await createRazorpayOrder(cart.cartTotal);
+    }
     // empty the cart
     await Cart.findOneAndUpdate(
       { userId, _id: cartId },
@@ -157,9 +173,10 @@ const processOrder = async ({
           items: cart.items,
           paymentMethod,
           address: orderAddress,
-          coupon: cart.coupon._id,
+          coupon: cart.coupon ? cart.coupon._id : null,
           discountType: cart.discountType,
           discountValue: cart.discountValue,
+          paymentOrder: ROrder,
           // TODO Other order details
         },
       ],
@@ -491,6 +508,62 @@ export const editOrderStatus: AdminRequestHandler<
     res.status(200).json({
       success: true,
       data: updatedOrder,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+import { createHmac } from "crypto";
+import { configDotenv } from "dotenv";
+import { validatePaymentVerification } from "razorpay/dist/utils/razorpay-utils";
+configDotenv();
+const RAZORPAY_KEY_SECRET = process.env.RAZORPAY_KEY_SECRET;
+if (!RAZORPAY_KEY_SECRET) {
+  throw new Error("RAZORPAY_KEY_SECRET not found. Set it in your .env");
+}
+export const verifyPayment: UserRequestHandler<
+  {},
+  any,
+  {
+    razorpay_payment_id: string;
+    razorpay_order_id: string;
+    razorpay_signature: string;
+  }
+> = async (req, res, next) => {
+  const userId = req.userId as string;
+  const { razorpay_order_id, razorpay_payment_id, razorpay_signature } =
+    req.body;
+  console.log("razorpay_order_id: ", razorpay_order_id);
+  const paymentVerified = validatePaymentVerification(
+    { order_id: razorpay_order_id, payment_id: razorpay_payment_id },
+    razorpay_signature,
+    RAZORPAY_KEY_SECRET
+  );
+
+  if (!paymentVerified) {
+    res.status(400).json({
+      success: false,
+      message: "Payment is not verified",
+    });
+    return;
+  }
+
+  try {
+    // updating order payment status
+    const order = await Order.findOne({ userId }).sort({ createdAt: -1 });
+    if (!order) {
+      res.status(400).json({
+        success: false,
+        message: "Couldn't find order",
+      });
+      return;
+    }
+    order.paymentStatus = "paid";
+    await order.save();
+    res.status(200).json({
+      success: true,
+      message: "Payment has been verified successfully",
     });
   } catch (error) {
     next(error);

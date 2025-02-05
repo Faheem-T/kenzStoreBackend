@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 import { AddressType } from "./address";
 import { ProductPopulatedItem } from "./item";
 import { ProductType } from "./product";
+import { Orders } from "razorpay/dist/types/orders";
 
 // SHARED TYPE: Sync with frontend
 export interface OrderType {
@@ -25,6 +26,9 @@ export interface OrderType {
   // Cancel date
   cancelledAt: Date;
 
+  // payment related fields
+  paymentOrder: Orders.RazorpayOrder;
+  paymentStatus: PaymentStatus;
   // Virtual fields
   totalPrice: number;
 
@@ -50,7 +54,16 @@ export const paymentMethods = ["COD", "Credit Card", "Debit Card"] as const;
 export type PaymentMethod = (typeof paymentMethods)[number];
 
 // SHARED TYPE: Sync with frontend
-export const orderStatuses = ["pending", "completed", "cancelled"] as const;
+export const paymentStatuses = ["incomplete", "paid"] as const;
+export type PaymentStatus = (typeof paymentStatuses)[number];
+
+// SHARED TYPE: Sync with frontend
+export const orderStatuses = [
+  "pending",
+  "completed",
+  "cancelled",
+  // "payment incomplete",
+] as const;
 export type OrderStatus = (typeof orderStatuses)[number];
 
 // SHARED TYPE: Sync with frontend

@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import { OrderType } from "../types/order";
+import { orderStatuses, OrderType, paymentStatuses } from "../types/order";
 
 type IOrder = OrderType & mongoose.Document;
 
@@ -42,7 +42,7 @@ const orderSchema = new mongoose.Schema<IOrder>(
     discountValue: { type: Number, default: 0 },
     status: {
       type: String,
-      enum: ["pending", "completed", "cancelled"],
+      enum: orderStatuses,
       default: "pending",
     },
     paymentMethod: {
@@ -73,6 +73,15 @@ const orderSchema = new mongoose.Schema<IOrder>(
     },
     cancelledAt: {
       type: Date,
+    },
+    // payment related
+    paymentOrder: {
+      type: mongoose.Schema.Types.Mixed,
+    },
+    paymentStatus: {
+      type: String,
+      enum: paymentStatuses,
+      default: "incomplete",
     },
   },
   { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
