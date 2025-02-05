@@ -21,146 +21,6 @@ const productProjection = {
   discountType: 1,
   isDeleted: 1,
 };
-
-export const finalPriceCalculationAggregation = [
-  {
-    $addFields: {
-      // Calculate product discount only if within the valid date range
-      productDiscount: {
-        $cond: [
-          {
-            $and: [
-              { $eq: ["$discountType", "percentage"] },
-              { $lte: ["$discountStartDate", new Date()] },
-              { $gte: ["$discountEndDate", new Date()] },
-            ],
-          },
-          { $multiply: ["$discountValue", "$price", 0.01] },
-          {
-            $cond: [
-              {
-                $and: [
-                  { $eq: ["$discountType", "fixed"] },
-                  { $lte: ["$discountStartDate", new Date()] },
-                  { $gte: ["$discountEndDate", new Date()] },
-                ],
-              },
-              "$discountValue",
-              0,
-            ],
-          },
-        ],
-      },
-      productDiscountName: {
-        $cond: [
-          {
-            $and: [
-              {
-                $or: [
-                  { $eq: ["$discountType", "percentage"] },
-                  { $eq: ["$discountType", "fixed"] },
-                ],
-              },
-              { $lte: ["$discountStartDate", new Date()] },
-              { $gte: ["$discountEndDate", new Date()] },
-            ],
-          },
-          "$discountName",
-          null,
-        ],
-      },
-      categoryDiscount: {
-        $cond: [
-          {
-            $and: [
-              { $eq: ["$category.discountType", "percentage"] },
-              { $lte: ["$category.discountStartDate", new Date()] },
-              { $gte: ["$category.discountEndDate", new Date()] },
-            ],
-          },
-          { $multiply: ["$category.discountValue", "$price", 0.01] },
-          {
-            $cond: [
-              {
-                $and: [
-                  { $eq: ["$category.discountType", "fixed"] },
-                  { $lte: ["$category.discountStartDate", new Date()] },
-                  { $gte: ["$category.discountEndDate", new Date()] },
-                ],
-              },
-              "$category.discountValue",
-              0,
-            ],
-          },
-        ],
-      },
-      categoryDiscountName: {
-        $cond: [
-          {
-            $and: [
-              {
-                $or: [
-                  { $eq: ["$category.discountType", "percentage"] },
-                  { $eq: ["$category.discountType", "fixed"] },
-                ],
-              },
-              { $lte: ["$category.discountStartDate", new Date()] },
-              { $gte: ["$category.discountEndDate", new Date()] },
-            ],
-          },
-          "$category.discountName",
-          null,
-        ],
-      },
-    },
-  },
-  {
-    $addFields: {
-      effectiveDiscount: {
-        $max: ["$productDiscount", "$categoryDiscount"],
-      },
-      appliedDiscountName: {
-        $cond: [
-          { $gt: ["$productDiscount", "$categoryDiscount"] },
-          "$productDiscountName",
-          {
-            $cond: [
-              { $gt: ["$categoryDiscount", "$productDiscount"] },
-              "$categoryDiscountName",
-              null,
-            ],
-          },
-        ],
-      },
-      finalPrice: {
-        $subtract: [
-          "$price",
-          { $max: ["$productDiscount", "$categoryDiscount"] },
-        ],
-      },
-    },
-  },
-];
-
-export const singleProductProjection = {
-  $project: {
-    name: 1,
-    description: 1,
-    price: 1,
-    images: 1,
-    avgRating: 1,
-    isDeleted: 1,
-    specifications: 1,
-    productDiscount: 1,
-    categoryDiscount: 1,
-    effectiveDiscount: 1,
-    finalPrice: 1,
-    appliedDiscountName: 1,
-    "category.name": 1,
-    stock: 1,
-  },
-};
-
 // get a product by its ID
 export const getProduct: RequestHandler<{ id: string }> = async (
   req,
@@ -255,6 +115,89 @@ export const patchProduct: RequestHandler<
 };
 
 // get all products
+// export const getProducts: RequestHandler<
+//   void,
+//   any,
+//   any,
+//   {
+//     page: string;
+//     sort: "asc" | "desc";
+//     sortBy: string;
+//     limit: string;
+//     q: string;
+//     category?: string;
+//   }
+// > = async (req, res, next) => {
+//   const {
+//     page = "1",
+//     sort = "asc",
+//     limit = "10",
+//     q = "",
+//     sortBy = "createdAt",
+//     category = "",
+//   } = req.query;
+
+//   const pageNum = parseInt(page, 10);
+//   const limitNum = parseInt(limit, 10);
+//   const sortOrder = sort === "asc" ? 1 : -1;
+
+//   // Validate parsed parameters
+//   if (isNaN(pageNum) || isNaN(limitNum) || pageNum < 1 || limitNum < 1) {
+//     res.status(400).json({
+//       success: false,
+//       message: "Invalid pagination parameters",
+//     });
+//     return;
+//   }
+
+//   // Whitelist of fields allowed for sorting
+//   const validSortFields = ["createdAt", "finalPrice", "name", "avgRating"];
+//   if (!validSortFields.includes(sortBy)) {
+//     res.status(400).json({
+//       success: false,
+//       message: `Invalid sortBy Field. Allowed fields are: ${validSortFields.join(
+//         ", "
+//       )}`,
+//     });
+//     return;
+//   }
+
+//   // console.log(typeof categories);
+//   // console.log(categories);
+//   const categoryCondition =
+//     category !== ""
+//       ? {
+//           category,
+//         }
+//       : {};
+
+//   try {
+//     const foundProducts = await Product.find({
+//       isDeleted: { $ne: true },
+//       $or: [
+//         { name: { $regex: q, $options: "i" } },
+//         { description: { $regex: q, $options: "i" } },
+//       ],
+//       ...categoryCondition,
+//     })
+//       .populate(populateCategory())
+//       .sort({ [sortBy]: sortOrder })
+//       .skip((pageNum - 1) * limitNum)
+//       .limit(limitNum)
+//       .exec();
+
+//     console.log(foundProducts);
+
+//     res.status(200).json({
+//       success: true,
+//       count: foundProducts.length,
+//       data: foundProducts,
+//     });
+//   } catch (error) {
+//     next(error);
+//   }
+// };
+
 export const getProducts: RequestHandler<
   void,
   any,
@@ -265,6 +208,7 @@ export const getProducts: RequestHandler<
     sortBy: string;
     limit: string;
     q: string;
+    category?: string;
   }
 > = async (req, res, next) => {
   const {
@@ -273,23 +217,21 @@ export const getProducts: RequestHandler<
     limit = "10",
     q = "",
     sortBy = "createdAt",
+    category = "",
   } = req.query;
 
   const pageNum = parseInt(page, 10);
   const limitNum = parseInt(limit, 10);
   const sortOrder = sort === "asc" ? 1 : -1;
 
-  // Validate parsed parameters
   if (isNaN(pageNum) || isNaN(limitNum) || pageNum < 1 || limitNum < 1) {
-    res.status(400).json({
-      success: false,
-      message: "Invalid pagination parameters",
-    });
+    res
+      .status(400)
+      .json({ success: false, message: "Invalid pagination parameters" });
     return;
   }
 
-  // Whitelist of fields allowed for sorting
-  const validSortFields = ["createdAt", "price", "name", "avgRating"];
+  const validSortFields = ["createdAt", "finalPrice", "name", "avgRating"];
   if (!validSortFields.includes(sortBy)) {
     res.status(400).json({
       success: false,
@@ -300,79 +242,129 @@ export const getProducts: RequestHandler<
     return;
   }
 
-  try {
-    const foundProducts = await Product.find({
-      isDeleted: { $ne: true },
-      $or: [
-        { name: { $regex: q, $options: "i" } },
-        { description: { $regex: q, $options: "i" } },
-      ],
-    })
-      .populate(populateCategory())
-      .sort({ [sortBy]: sortOrder })
-      .skip((pageNum - 1) * limitNum)
-      .limit(limitNum)
-      .exec();
+  const matchStage: any = {
+    isDeleted: { $ne: true },
+    $or: [
+      { name: { $regex: q, $options: "i" } },
+      { description: { $regex: q, $options: "i" } },
+    ],
+  };
 
-    // const foundProducts = await Product.aggregate([
-    //   // Add a match stage for searching
-    //   {
-    //     $match: {
-    //       $or: [
-    //         { name: { $regex: q, $options: "i" } },
-    //         { description: { $regex: q, $options: "i" } },
-    //       ], // Search by name and description (case-insensitive)
-    //     },
-    //   },
-    //   {
-    //     $lookup: {
-    //       from: "categories", // Collection name for categories
-    //       localField: "category",
-    //       foreignField: "_id",
-    //       as: "category",
-    //     },
-    //   },
-    //   {
-    //     $unwind: {
-    //       path: "$category",
-    //       preserveNullAndEmptyArrays: true, // Allow products without a category
-    //     },
-    //   },
-    //   ...finalPriceCalculationAggregation,
-    //   // Sort based on query parameters
-    //   {
-    //     $sort: {
-    //       [sortBy]: sortOrder,
-    //     },
-    //   },
-    //   // Add pagination
-    //   {
-    //     $skip: (pageNum - 1) * limitNum,
-    //   },
-    //   {
-    //     $limit: limitNum,
-    //   },
-    //   {
-    //     $project: {
-    //       name: 1,
-    //       price: 1,
-    //       images: 1,
-    //       productDiscount: 1,
-    //       avgRating: 1,
-    //       categoryDiscount: 1,
-    //       effectiveDiscount: 1,
-    //       finalPrice: 1,
-    //       appliedDiscountName: 1,
-    //       "category.name": 1,
-    //     },
-    //   },
-    // ]);
+  if (category) {
+    matchStage.category = new mongoose.Types.ObjectId(category);
+  }
+
+  try {
+    const foundProducts = await Product.aggregate([
+      { $match: matchStage },
+      {
+        $lookup: {
+          from: "categories",
+          localField: "category",
+          foreignField: "_id",
+          as: "category",
+        },
+      },
+      {
+        $unwind: { path: "$category", preserveNullAndEmptyArrays: true },
+      },
+      {
+        $addFields: {
+          productDiscount: {
+            $cond: {
+              if: {
+                $and: [
+                  "$discountType",
+                  "$discountValue",
+                  "$discountStartDate",
+                  "$discountEndDate",
+                  { $lte: ["$discountStartDate", new Date()] },
+                  { $gte: ["$discountEndDate", new Date()] },
+                ],
+              },
+              then: {
+                $cond: {
+                  if: { $eq: ["$discountType", "percentage"] },
+                  then: {
+                    $multiply: ["$price", { $divide: ["$discountValue", 100] }],
+                  },
+                  else: "$discountValue",
+                },
+              },
+              else: 0,
+            },
+          },
+          categoryDiscount: {
+            $cond: {
+              if: {
+                $and: [
+                  "$category.discountType",
+                  "$category.discountValue",
+                  "$category.discountStartDate",
+                  "$category.discountEndDate",
+                  { $lte: ["$category.discountStartDate", new Date()] },
+                  { $gte: ["$category.discountEndDate", new Date()] },
+                ],
+              },
+              then: {
+                $cond: {
+                  if: { $eq: ["$category.discountType", "percentage"] },
+                  then: {
+                    $multiply: [
+                      "$price",
+                      { $divide: ["$category.discountValue", 100] },
+                    ],
+                  },
+                  else: "$category.discountValue",
+                },
+              },
+              else: 0,
+            },
+          },
+        },
+      },
+      {
+        $addFields: {
+          effectiveDiscount: {
+            $cond: {
+              if: { $gt: ["$productDiscount", "$categoryDiscount"] },
+              then: {
+                name: "$discountName",
+                type: "$discountType",
+                value: "$discountValue",
+                startDate: "$discountStartDate",
+                endDate: "$discountEndDate",
+                discountApplied: "$productDiscount",
+              },
+              else: {
+                name: "$category.discountName",
+                type: "$category.discountType",
+                value: "$category.discountValue",
+                startDate: "$category.discountStartDate",
+                endDate: "$category.discountEndDate",
+                discountApplied: "$categoryDiscount",
+              },
+            },
+          },
+        },
+      },
+      {
+        $addFields: {
+          finalPrice: {
+            $subtract: ["$price", "$effectiveDiscount.discountApplied"],
+          },
+        },
+      },
+      { $sort: { [sortBy]: sortOrder } },
+      { $skip: (pageNum - 1) * limitNum },
+      { $limit: limitNum },
+    ]);
     console.log(foundProducts);
 
     res.status(200).json({
       success: true,
-      data: foundProducts,
       count: foundProducts.length,
+      data: foundProducts,
     });
   } catch (error) {
     next(error);
