@@ -354,11 +354,13 @@ export const getAllUsersOrders: UserRequestHandler<
 > = async (req, res, next) => {
   const userId = req.userId as string;
   try {
-    const foundOrders = await Order.find({ userId }).populate<{
-      items: ProductPopulatedItem<
-        Pick<ProductType, "name" | "description" | "images" | "_id">
-      >[];
-    }>("items.productId", "name description images _id");
+    const foundOrders = await Order.find({ userId })
+      .populate<{
+        items: ProductPopulatedItem<
+          Pick<ProductType, "name" | "description" | "images" | "_id">
+        >[];
+      }>("items.productId", "name description images _id")
+      .sort({ createdAt: -1 });
     if (!foundOrders) {
       res.status(400).json({
         success: false,

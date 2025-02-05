@@ -16,6 +16,7 @@ import { adminAccessMiddleware } from "../middlewares/adminAccessMiddleware";
 export const orderRouter = Router()
   .post("/", userAccessMiddleware, placeOrder)
   .post("/verify", userAccessMiddleware, verifyPayment)
+  // TODO: Implement retry payment
   .patch("/:orderId/cancel", userAccessMiddleware, cancelOrder)
   .get("/", userAccessMiddleware, getAllUsersOrders)
   .get("/admin", adminAccessMiddleware, getAllOrders) // Admin only

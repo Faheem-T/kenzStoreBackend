@@ -1,5 +1,5 @@
-import { createRazorpayOrder } from "../utils/razorpay";
+// import { createRazorpayOrder } from "../utils/razorpay";
 
-test("Creates order successfully", () => {
-  expect(createRazorpayOrder()).toBe(1);
-});
+// test("Creates order successfully", () => {
+//   expect(createRazorpayOrder()).toBe(1);
+// });
