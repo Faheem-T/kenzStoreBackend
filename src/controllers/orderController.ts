@@ -1,3 +1,7 @@
+import { configDotenv } from "dotenv";
+configDotenv();
+import { validatePaymentVerification } from "razorpay/dist/utils/razorpay-utils";
+import { Wallet } from "../models/walletModel";
 import {
   AdminRequestHandler,
   UserRequestHandler,
@@ -22,6 +26,11 @@ import { ProductPopulatedItem } from "../types/item";
 import { CouponType } from "../types/coupon";
 import { createRazorpayOrder } from "../utils/razorpay";
 import { Orders } from "razorpay/dist/types/orders";
+
+const RAZORPAY_KEY_SECRET = process.env.RAZORPAY_KEY_SECRET;
+if (!RAZORPAY_KEY_SECRET) {
+  throw new Error("RAZORPAY_KEY_SECRET not found. Set it in your .env");
+}
 
 // SHARED TYPE: Sync with frontend
 interface PlaceOrderResponse {
@@ -338,6 +347,21 @@ export const cancelOrder: UserRequestHandler<{
   order.status = "cancelled";
   order.cancelledAt = new Date();
   try {
+    if (order.paymentStatus === "paid") {
+      order.paymentStatus = "refunded";
+      await Wallet.findOneAndUpdate(
+        { user: userId },
+        { $inc: { balance: order.totalPrice } },
+        { upsert: true }
+      );
+      await order.save();
+      res.status(200).json({
+        success: true,
+        message:
+          "Order has been cancelled successfully. Payment has been added to wallet.",
+      });
+      return;
+    }
     await order.save();
     res.status(200).json({
       success: true,
@@ -516,14 +540,6 @@ export const editOrderStatus: AdminRequestHandler<
   }
 };
 
-import { createHmac } from "crypto";
-import { configDotenv } from "dotenv";
-import { validatePaymentVerification } from "razorpay/dist/utils/razorpay-utils";
-configDotenv();
-const RAZORPAY_KEY_SECRET = process.env.RAZORPAY_KEY_SECRET;
-if (!RAZORPAY_KEY_SECRET) {
-  throw new Error("RAZORPAY_KEY_SECRET not found. Set it in your .env");
-}
 export const verifyPayment: UserRequestHandler<
   {},
   any,
