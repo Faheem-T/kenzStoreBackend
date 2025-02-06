@@ -12,6 +12,7 @@ import { offerRoutes } from "./offerRouter";
 import { couponRouter } from "./couponRouter";
 import { wishlistRouter } from "./wishlistRouter";
 import { paymentRouter } from "./paymentRouter";
+import { walletRouter } from "./walletRouter";
 
 // v1/
 export const rootRouter = Router()
@@ -27,4 +28,5 @@ export const rootRouter = Router()
   .use("/offers", offerRoutes)
   .use("/coupons", couponRouter)
   .use("/wishlist", wishlistRouter)
-  .use("/payments", paymentRouter);
+  .use("/payments", paymentRouter)
+  .use("/wallets", walletRouter);

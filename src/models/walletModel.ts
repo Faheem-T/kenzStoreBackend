@@ -1,6 +1,9 @@
 import mongoose from "mongoose";
+import { WalletType } from "../types/wallet";
 
-const walletSchema = new mongoose.Schema(
+type IWallet = WalletType & mongoose.Document;
+
+const walletSchema = new mongoose.Schema<IWallet>(
   {
     user: {
       type: mongoose.Schema.Types.ObjectId,
