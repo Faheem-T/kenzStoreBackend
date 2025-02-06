@@ -432,8 +432,14 @@ export const getOrder: UserRequestHandler<{
   }
 };
 
-export const getAllOrders: AdminRequestHandler = async (req, res, next) => {
+export const getAllOrders: AdminRequestHandler<
+  {},
+  any,
+  any,
+  { orderStatus?: OrderStatus }
+> = async (req, res, next) => {
   const adminId = req.adminId;
+  const { orderStatus } = req.query;
   if (!adminId) {
     res.status(403).json({
       success: false,
@@ -442,8 +448,13 @@ export const getAllOrders: AdminRequestHandler = async (req, res, next) => {
     return;
   }
 
+  const findQuery: any = {};
+  if (orderStatus) {
+    findQuery.status = orderStatus;
+  }
+
   try {
-    const foundOrders = await Order.find({}).populate<{
+    const foundOrders = await Order.find(findQuery).populate<{
       items: ProductPopulatedItem<
         Pick<ProductType, "name" | "description" | "images" | "_id">
       >[];
@@ -497,7 +508,6 @@ export const editOrderStatus: AdminRequestHandler<
   any,
   { status: OrderStatus }
 > = async (req, res, next) => {
-  const adminId = req.adminId as string;
   const orderId = req.params.orderId;
   if (!orderId) {
     res.status(400).json({
@@ -515,15 +525,11 @@ export const editOrderStatus: AdminRequestHandler<
       )}`,
     });
   }
+
   try {
-    const updatedOrder = await Order.findByIdAndUpdate(
-      orderId,
-      { status },
-      {
-        new: true,
-      }
-    );
-    if (!updatedOrder) {
+    const order = await Order.findById(orderId);
+
+    if (!order) {
       res.status(400).json({
         success: false,
         message: "Order not found",
@@ -531,9 +537,20 @@ export const editOrderStatus: AdminRequestHandler<
       return;
     }
 
+    if (order.status === "requesting return") {
+      res.status(400).json({
+        success: false,
+        message: `Order status is ${order.status}. Either approve or reject the request before changing order status.`,
+      });
+      return;
+    }
+
+    order.status = status;
+    order.save();
+
     res.status(200).json({
       success: true,
-      data: updatedOrder,
+      data: order,
     });
   } catch (error) {
     next(error);
@@ -582,6 +599,119 @@ export const verifyPayment: UserRequestHandler<
     res.status(200).json({
       success: true,
       message: "Payment has been verified successfully",
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const requestOrderReturn: UserRequestHandler<{
+  orderId: string;
+}> = async (req, res, next) => {
+  const userId = req.userId;
+  const orderId = req.params.orderId;
+  if (!orderId) {
+    res.status(400).json({
+      success: false,
+      message: "'orderId' is required",
+    });
+  }
+
+  try {
+    const order = await Order.findOneAndUpdate(
+      { _id: orderId, userId },
+      { status: "requesting return" },
+      { new: true }
+    );
+    if (!order) {
+      res.status(400).json({
+        success: false,
+        message: "Couldn't find order",
+      });
+      return;
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Return of order has been requested",
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const approveOrderReturn: AdminRequestHandler<{
+  orderId: string;
+}> = async (req, res, next) => {
+  const orderId = req.params.orderId;
+  if (!orderId) {
+    res.status(400).json({
+      success: false,
+      message: "'orderId' is required",
+    });
+    return;
+  }
+
+  try {
+    const order = await Order.findById(orderId);
+    if (!order) {
+      res.status(400).json({
+        success: false,
+        message: "Order not found",
+      });
+      return;
+    }
+
+    order.status = "returned";
+
+    await Wallet.findOneAndUpdate(
+      { user: order.userId },
+      { $inc: { balance: order.totalPrice } }
+    );
+
+    order.paymentStatus = "refunded";
+
+    await order.save();
+
+    res.status(200).json({
+      success: true,
+      message:
+        "Order has been marked as returned and payment has been refunded",
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const rejectOrderReturn: AdminRequestHandler<{
+  orderId: string;
+}> = async (req, res, next) => {
+  const orderId = req.params.orderId;
+  if (!orderId) {
+    res.status(400).json({
+      success: false,
+      message: "'orderId' is required",
+    });
+    return;
+  }
+
+  try {
+    const order = await Order.findById(orderId);
+    if (!order) {
+      res.status(400).json({
+        success: false,
+        message: "Order not found",
+      });
+      return;
+    }
+
+    order.status = "completed";
+
+    await order.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Order return request has been rejected",
     });
   } catch (error) {
     next(error);
