@@ -18,16 +18,35 @@ export const getSalesReport: AdminRequestHandler<
   {},
   SalesReportBody,
   {},
-  { timeframe?: Timeframe }
+  { timeframe?: Timeframe; startDate: string; endDate: string }
 > = async (req, res, next) => {
-  const { timeframe = "day" } = req.query;
-  console.log(typeof timeframe);
+  const {
+    timeframe = "day",
+    startDate: startDateString,
+    endDate: endDateString,
+  } = req.query;
   if (!timeframes.includes(timeframe)) {
     res.status(400).json({
       success: false,
       message: `invalid 'timeframe'. Allowed values are: ${timeframes.join(
         ", "
       )}. Got ${timeframe}`,
+    });
+    return;
+  }
+  let startDate;
+  let endDate;
+  try {
+    if (startDateString) {
+      startDate = new Date(startDateString);
+    }
+    if (endDateString) {
+      endDate = new Date(endDateString);
+    }
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message: "Invalid start or end date",
     });
     return;
   }
@@ -39,7 +58,12 @@ export const getSalesReport: AdminRequestHandler<
       (acc, order) => acc + order.totalPrice,
       0
     );
-    const orderCountByTimeframe = await getOrderCountByTimeframe(timeframe);
+
+    const orderCountByTimeframe = await getOrderCountByTimeframe(
+      timeframe,
+      startDate,
+      endDate
+    );
     const topSellingProducts = await getTopSellingProducts();
     res.status(200).json({
       success: true,
@@ -55,7 +79,11 @@ export const getSalesReport: AdminRequestHandler<
   }
 };
 
-const getOrderCountByTimeframe = async (timeframe: Timeframe) => {
+const getOrderCountByTimeframe = async (
+  timeframe: Timeframe,
+  startDate?: Date,
+  endDate?: Date
+) => {
   let format = "%Y-%m-%d";
   switch (timeframe) {
     case "month":
@@ -65,8 +93,19 @@ const getOrderCountByTimeframe = async (timeframe: Timeframe) => {
       format = "%Y";
       break;
   }
+
+  const matchStage: any = { status: "completed" };
+  if (startDate) {
+    matchStage.createdAt = { $gte: startDate };
+  }
+  if (endDate) {
+    matchStage.createdAt = { ...matchStage.createdAt, $lte: endDate };
+  }
+
+  console.log(matchStage);
+
   const result = await Order.aggregate<{ _id: string; count: number }>([
-    { $match: { status: "completed" } },
+    { $match: matchStage },
     {
       $group: {
         _id: { $dateToString: { format, date: "$createdAt" } },

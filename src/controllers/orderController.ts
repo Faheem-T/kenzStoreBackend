@@ -124,6 +124,10 @@ const processOrder = async ({
     // validate cart
     const cart = await validateCart(cartId, userId);
 
+    // Don't allow COD for orders above 1000QR
+    if (cart.cartTotal > 1000 && paymentMethod === "COD") {
+      throw new Error("COD is not allowed for orders above QR 1000");
+    }
     // update stocks
     const stockUpdates = cart.items.map((item) => ({
       updateOne: {
