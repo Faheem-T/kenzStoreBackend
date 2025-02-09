@@ -12,6 +12,8 @@ type SalesReportBody = BaseResponse<{
   totalSaleAmount: number;
   orderCountByTimeframe: { _id: string; count: number }[];
   topSellingProducts: { _id: string /*ObjectId*/; count: number }[];
+  topSellingCategories: { _id: { name: string }; count: number }[];
+  topSellingBrands: { _id: string; count: number }[];
 }>;
 
 export const getSalesReport: AdminRequestHandler<
@@ -65,6 +67,8 @@ export const getSalesReport: AdminRequestHandler<
       endDate
     );
     const topSellingProducts = await getTopSellingProducts();
+    const topSellingCategories = await getTopSellingCategories();
+    const topSellingBrands = await getTopSellingBrands();
     res.status(200).json({
       success: true,
       data: {
@@ -72,6 +76,8 @@ export const getSalesReport: AdminRequestHandler<
         totalSaleAmount: overallOrderAmount,
         orderCountByTimeframe,
         topSellingProducts,
+        topSellingCategories,
+        topSellingBrands,
       },
     });
   } catch (error) {
@@ -84,10 +90,10 @@ const getOrderCountByTimeframe = async (
   startDate?: Date,
   endDate?: Date
 ) => {
-  let format = "%Y-%m-%d";
+  let format = "%d %b %Y";
   switch (timeframe) {
     case "month":
-      format = "%Y-%m";
+      format = "%b %Y";
       break;
     case "year":
       format = "%Y";
@@ -101,8 +107,6 @@ const getOrderCountByTimeframe = async (
   if (endDate) {
     matchStage.createdAt = { ...matchStage.createdAt, $lte: endDate };
   }
-
-  console.log(matchStage);
 
   const result = await Order.aggregate<{ _id: string; count: number }>([
     { $match: matchStage },
@@ -135,8 +139,95 @@ const getTopSellingProducts = async () => {
       $sort: { count: -1 },
     },
     {
-      $limit: 5,
+      $limit: 10,
     },
   ]);
   return products;
+};
+
+const getTopSellingCategories = async () => {
+  const category = await Order.aggregate<{
+    _id: { name: string };
+    count: number;
+  }>([
+    {
+      $match: { status: "completed" },
+    },
+    {
+      $unwind: "$items",
+    },
+    {
+      $lookup: {
+        from: "products",
+        as: "items.product",
+        foreignField: "_id",
+        localField: "items.productId",
+        pipeline: [{ $project: { category: 1 } }],
+      },
+    },
+    {
+      $group: {
+        _id: "$items.product.category",
+        count: { $sum: 1 },
+      },
+    },
+    {
+      $unwind: "$_id",
+    },
+    {
+      $lookup: {
+        from: "categories",
+        as: "_id",
+        foreignField: "_id",
+        localField: "_id",
+        pipeline: [{ $project: { name: 1, _id: 0 } }],
+      },
+    },
+    { $unwind: "$_id" },
+    {
+      $sort: { count: -1 },
+    },
+    {
+      $limit: 10,
+    },
+  ]);
+  return category;
+};
+
+const getTopSellingBrands = async () => {
+  const category = await Order.aggregate<{ _id: string; count: number }>([
+    {
+      $match: { status: "completed" },
+    },
+    {
+      $unwind: "$items",
+    },
+    {
+      $lookup: {
+        from: "products",
+        as: "items.product",
+        foreignField: "_id",
+        localField: "items.productId",
+        pipeline: [{ $project: { brand: 1 } }],
+      },
+    },
+    {
+      $group: {
+        _id: "$items.product.brand",
+        count: { $sum: 1 },
+      },
+    },
+    {
+      $unwind: "$_id",
+    },
+
+    {
+      $sort: { count: -1 },
+    },
+    {
+      $limit: 10,
+    },
+  ]);
+  console.log("Pipeline output: ", category);
+  return category;
 };

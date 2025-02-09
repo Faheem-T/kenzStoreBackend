@@ -3,7 +3,6 @@ import { AdminRequestHandler } from "../types/authenticatedRequest";
 
 export const adminAccessMiddleware: AdminRequestHandler = (req, res, next) => {
   const accessToken = req.header("authorization")?.split(" ")[1];
-  console.log(accessToken);
   if (!accessToken) {
     res.status(400).json({
       success: false,

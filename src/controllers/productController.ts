@@ -58,8 +58,6 @@ export const getProduct: RequestHandler<{ id: string }> = async (
     //   singleProductProjection,
     // ]);
     // const foundProduct = await Product.findById(productId).populate("category");
-    console.log(productId);
-    console.log(foundProduct);
 
     if (!foundProduct?.isDeleted) {
       res.status(200).json({
@@ -83,7 +81,7 @@ export const postProduct: RequestHandler<any, any, CreateProductType> = async (
   res,
   next
 ) => {
-  console.log("Create Product Body: \n", req.body);
+  // console.log("Create Product Body: \n", req.body);
   try {
     const createdProduct = await Product.create({ ...req.body });
     res.status(201).json({
@@ -102,7 +100,7 @@ export const patchProduct: RequestHandler<
   UpdateProductType
 > = async (req, res, next) => {
   const { id } = req.params;
-  console.log(req.body);
+  // console.log(req.body);
   try {
     const updatedProduct = await Product.findByIdAndUpdate(id, { ...req.body });
     res.status(200).json({
@@ -359,7 +357,7 @@ export const getProducts: RequestHandler<
       { $skip: (pageNum - 1) * limitNum },
       { $limit: limitNum },
     ]);
-    console.log(foundProducts);
+    // console.log(foundProducts);
 
     res.status(200).json({
       success: true,
