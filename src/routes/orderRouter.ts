@@ -11,6 +11,7 @@ import {
   placeOrder,
   rejectOrderReturn,
   requestOrderReturn,
+  retryPayment,
   verifyPayment,
 } from "../controllers/orderController";
 import { adminAccessMiddleware } from "../middlewares/adminAccessMiddleware";
@@ -19,6 +20,7 @@ import { adminAccessMiddleware } from "../middlewares/adminAccessMiddleware";
 export const orderRouter = Router()
   .post("/", userAccessMiddleware, placeOrder)
   .post("/verify", userAccessMiddleware, verifyPayment)
+  .patch("/:orderId/retry-payment", userAccessMiddleware, retryPayment)
   // TODO: Implement retry payment
   .patch("/:orderId/cancel", userAccessMiddleware, cancelOrder)
   .patch("/:orderId/return", userAccessMiddleware, requestOrderReturn)

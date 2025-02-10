@@ -81,11 +81,6 @@ export const placeOrder: UserRequestHandler<
       addressId,
     });
 
-    // let ROrder = null;
-    // if (paymentMethod !== "COD") {
-    //   ROrder = await createRazorpayOrder(order.totalPrice);
-    // }
-
     res.status(200).json({
       success: true,
       data: { orderId: order.id, razorpayOrder: order.paymentOrder },
@@ -243,8 +238,6 @@ const validateCart = async (
       },
     })
     .populate<{ coupon: CouponType }>("coupon");
-  // console.log("Cart Items:");
-  // console.log(cart?.items.map((item) => item.productId));
 
   if (!cart) {
     throw new Error("Cart not found");
@@ -568,12 +561,16 @@ export const verifyPayment: UserRequestHandler<
     razorpay_payment_id: string;
     razorpay_order_id: string;
     razorpay_signature: string;
+    orderId?: string;
   }
 > = async (req, res, next) => {
   const userId = req.userId as string;
-  const { razorpay_order_id, razorpay_payment_id, razorpay_signature } =
-    req.body;
-  console.log("razorpay_order_id: ", razorpay_order_id);
+  const {
+    razorpay_order_id,
+    razorpay_payment_id,
+    razorpay_signature,
+    orderId,
+  } = req.body;
   const paymentVerified = validatePaymentVerification(
     { order_id: razorpay_order_id, payment_id: razorpay_payment_id },
     razorpay_signature,
@@ -590,7 +587,9 @@ export const verifyPayment: UserRequestHandler<
 
   try {
     // updating order payment status
-    const order = await Order.findOne({ userId }).sort({ createdAt: -1 });
+    const order = await Order.findOne({ userId, _id: orderId }).sort({
+      createdAt: -1,
+    });
     if (!order) {
       res.status(400).json({
         success: false,
@@ -716,6 +715,57 @@ export const rejectOrderReturn: AdminRequestHandler<{
     res.status(200).json({
       success: true,
       message: "Order return request has been rejected",
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const retryPayment: UserRequestHandler<{ orderId: string }> = async (
+  req,
+  res,
+  next
+) => {
+  const orderId = req.params.orderId;
+  if (!orderId) {
+    res.status(400).json({
+      success: false,
+      message: "'orderId' is required",
+    });
+    return;
+  }
+  try {
+    const order = await Order.findById(orderId);
+    if (!order) {
+      res.status(400).json({
+        success: false,
+        message: "Couldn't find order",
+      });
+      return;
+    }
+
+    if (order.paymentMethod === "COD") {
+      res.status(400).json({
+        success: false,
+        message: "Payment method is 'COD'",
+      });
+      return;
+    }
+
+    if (order.paymentStatus === "paid") {
+      res.status(400).json({
+        success: false,
+        message: "Payment has already been completed",
+      });
+      return;
+    }
+
+    const ROrder = await createRazorpayOrder(order.totalPrice);
+    order.paymentOrder = ROrder;
+    await order.save();
+    res.status(200).json({
+      success: true,
+      data: { razorpayOrder: ROrder },
     });
   } catch (error) {
     next(error);

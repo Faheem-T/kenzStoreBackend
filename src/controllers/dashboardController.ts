@@ -130,10 +130,8 @@ const getOrderCountByTimeframe = async (
         count: { $sum: 1 },
       },
     },
-    // { $sort: { _id: -1 } },
   ]);
   result.sort((a, b) => new Date(a._id).getTime() - new Date(b._id).getTime());
-  console.log(result);
   return result;
 };
 
