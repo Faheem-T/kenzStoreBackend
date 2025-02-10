@@ -38,23 +38,37 @@ export const getSalesReport: AdminRequestHandler<
   }
   let startDate;
   let endDate;
-  try {
-    if (startDateString) {
-      startDate = new Date(startDateString);
+  let createdAt: Record<string, Date> = {};
+
+  if (startDateString) {
+    startDate = new Date(startDateString);
+    if (isNaN(startDate.getTime())) {
+      res.status(400).json({
+        success: false,
+        message: "Invalid start date",
+      });
+      return;
     }
-    if (endDateString) {
-      endDate = new Date(endDateString);
+    createdAt.$gte = startDate;
+  }
+
+  if (endDateString) {
+    endDate = new Date(endDateString);
+    if (isNaN(endDate.getTime())) {
+      res.status(400).json({
+        success: false,
+        message: "Invalid end date",
+      });
+      return;
     }
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: "Invalid start or end date",
-    });
-    return;
+    createdAt.$lte = endDate;
   }
 
   try {
-    const completedOrders = await Order.find({ status: "completed" });
+    const completedOrders = await Order.find({
+      status: "completed",
+      ...(Object.keys(createdAt).length > 0 && { createdAt }),
+    });
     const overallSalesCount = completedOrders.length;
     const overallOrderAmount = completedOrders.reduce(
       (acc, order) => acc + order.totalPrice,
@@ -116,8 +130,10 @@ const getOrderCountByTimeframe = async (
         count: { $sum: 1 },
       },
     },
-    { $sort: { _id: 1 } }, // Sort by date
+    // { $sort: { _id: -1 } },
   ]);
+  result.sort((a, b) => new Date(a._id).getTime() - new Date(b._id).getTime());
+  console.log(result);
   return result;
 };
 
@@ -228,6 +244,5 @@ const getTopSellingBrands = async () => {
       $limit: 10,
     },
   ]);
-  console.log("Pipeline output: ", category);
   return category;
 };
