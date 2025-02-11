@@ -13,7 +13,7 @@ export interface OrderType {
     price: number;
     quantity: number;
   }[];
-  coupon: mongoose.Schema.Types.ObjectId; // ObjectId
+  coupon: mongoose.Schema.Types.ObjectId | null; // ObjectId
   discountType: "percentage" | "fixed" | null;
   discountValue: number;
   status: OrderStatus;
@@ -24,7 +24,7 @@ export interface OrderType {
   >;
 
   // Cancel date
-  cancelledAt: Date;
+  cancelledAt?: Date;
 
   // payment related fields
   paymentOrder: Orders.RazorpayOrder;
@@ -69,5 +69,8 @@ export type OrderStatus = (typeof orderStatuses)[number];
 
 // SHARED TYPE: Sync with frontend
 export type GetUserOrder = ProductPopulatedOrderType<
-  Pick<ProductType, "name" | "description" | "images" | "_id">
+  Pick<
+    ProductType,
+    "name" | "description" | "images" | "_id" | "effectiveDiscount"
+  >
 >;

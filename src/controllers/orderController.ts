@@ -378,7 +378,10 @@ export const getAllUsersOrders: UserRequestHandler<
     const foundOrders = await Order.find({ userId })
       .populate<{
         items: ProductPopulatedItem<
-          Pick<ProductType, "name" | "description" | "images" | "_id">
+          Pick<
+            ProductType,
+            "name" | "description" | "images" | "_id" | "effectiveDiscount"
+          >
         >[];
       }>("items.productId", "name description images _id")
       .sort({ createdAt: -1 });
@@ -587,7 +590,10 @@ export const verifyPayment: UserRequestHandler<
 
   try {
     // updating order payment status
-    const order = await Order.findOne({ userId, _id: orderId }).sort({
+    const order = await Order.findOne({
+      userId,
+      ...(orderId ? { _id: orderId } : {}),
+    }).sort({
       createdAt: -1,
     });
     if (!order) {
