@@ -546,7 +546,10 @@ export const editOrderStatus: AdminRequestHandler<
     }
 
     order.status = status;
-    order.save();
+    if (status === "completed") {
+      order.completedAt = new Date();
+    }
+    await order.save();
 
     res.status(200).json({
       success: true,

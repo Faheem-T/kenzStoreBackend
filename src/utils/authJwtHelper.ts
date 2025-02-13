@@ -52,7 +52,7 @@ export const verifyRefreshToken = (refreshToken: string) => {
   try {
     decoded = <jwt.UserIDJwtPayload>jwt.verify(refreshToken, REFRESH_SECRET);
   } catch (error) {
-    console.log("user refresh verification error: \n", error);
+    // console.log("user refresh verification error: \n", error);
   }
   return decoded;
 };
@@ -66,7 +66,7 @@ export const verifyAccessToken = (accessToken: string) => {
   try {
     decoded = <jwt.UserIDJwtPayload>jwt.verify(accessToken, ACCESS_SECRET);
   } catch (error) {
-    console.log("user access verification error: \n", error);
+    // console.log("user access verification error: \n", error);
   }
   return decoded;
 };
@@ -86,7 +86,7 @@ export const verifyAdminRefreshToken = (refreshToken: string) => {
       jwt.verify(refreshToken, ADMIN_REFRESH_SECRET)
     );
   } catch (error) {
-    console.log("Admin refresh token verification error: ", error);
+    // console.log("Admin refresh token verification error: ", error);
   }
   return decoded;
 };
@@ -104,7 +104,7 @@ export const verifyAdminAccessToken = (accessToken: string) => {
       jwt.verify(accessToken, ADMIN_ACCESS_SECRET)
     );
   } catch (error) {
-    console.log("Admin access token verification error: ", error);
+    // console.log("Admin access token verification error: ", error);
   }
   return decoded;
 };

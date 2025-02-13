@@ -74,6 +74,9 @@ const orderSchema = new mongoose.Schema<IOrder>(
     cancelledAt: {
       type: Date,
     },
+    completedAt: {
+      type: Date,
+    },
     // payment related
     paymentOrder: {
       type: mongoose.Schema.Types.Mixed,
@@ -87,12 +90,16 @@ const orderSchema = new mongoose.Schema<IOrder>(
   { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
 );
 
-orderSchema.virtual("totalPrice").get(function () {
+orderSchema.virtual("originalPrice").get(function () {
   let total = this.items.reduce(
     (total, item) => total + item.price * item.quantity,
     0
   );
+  return Math.round(total * 100) / 100;
+});
 
+orderSchema.virtual("totalPrice").get(function () {
+  let total = this.originalPrice;
   if (this.coupon && this.discountType && this.discountValue) {
     if (this.discountType === "percentage") {
       total = total * (1 - this.discountValue / 100);
@@ -100,7 +107,7 @@ orderSchema.virtual("totalPrice").get(function () {
       total = total - this.discountValue;
     }
   }
-  return Math.max(total, 0);
+  return Math.round(Math.max(total, 0) * 100) / 100;
 });
 
 export const Order = mongoose.model("Order", orderSchema);

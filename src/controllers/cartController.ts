@@ -72,6 +72,7 @@ export const addProductToCart: UserRequestHandler<
         $set: {
           "items.$.quantity": quantity,
           "items.$.price": foundProduct.finalPrice, // also update price
+          // "items.$.originalPrice": foundProduct.price,
         },
       },
       { new: true }

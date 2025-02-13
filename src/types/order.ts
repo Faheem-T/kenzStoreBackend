@@ -23,13 +23,15 @@ export interface OrderType {
     "address_line" | "city" | "state" | "pincode" | "landmark"
   >;
 
-  // Cancel date
+  // Cancel & complete date
   cancelledAt?: Date;
+  completedAt?: Date;
 
   // payment related fields
   paymentOrder: Orders.RazorpayOrder;
   paymentStatus: PaymentStatus;
   // Virtual fields
+  originalPrice: number;
   totalPrice: number;
 
   // Timestamp fields

@@ -1,6 +1,7 @@
 import { Order } from "../models/orderModel";
 import { AdminRequestHandler } from "../types/authenticatedRequest";
 import { BaseResponse } from "../types/baseResponse";
+import { OrderType } from "../types/order";
 
 // SHARED
 const timeframes = ["day", "month", "year"] as const;
@@ -8,6 +9,20 @@ type Timeframe = (typeof timeframes)[number];
 
 // SHARED TYPE
 type SalesReportBody = BaseResponse<{
+  orders: (Pick<
+    OrderType,
+    | "_id"
+    | "userId"
+    | "items"
+    | "coupon"
+    | "discountType"
+    | "discountValue"
+    | "paymentMethod"
+    | "status"
+    | "completedAt"
+    | "totalPrice"
+    | "originalPrice"
+  > & { userId: { _id: string; firstName: string } })[];
   totalSalesCount: number;
   totalSaleAmount: number;
   orderCountByTimeframe: { _id: string; count: number }[];
@@ -38,7 +53,7 @@ export const getSalesReport: AdminRequestHandler<
   }
   let startDate;
   let endDate;
-  let createdAt: Record<string, Date> = {};
+  let completedAt: Record<string, Date> = {};
 
   if (startDateString) {
     startDate = new Date(startDateString);
@@ -49,7 +64,7 @@ export const getSalesReport: AdminRequestHandler<
       });
       return;
     }
-    createdAt.$gte = startDate;
+    completedAt.$gte = startDate;
   }
 
   if (endDateString) {
@@ -61,19 +76,22 @@ export const getSalesReport: AdminRequestHandler<
       });
       return;
     }
-    createdAt.$lte = endDate;
+    completedAt.$lte = endDate;
   }
 
   try {
-    const completedOrders = await Order.find({
-      status: "completed",
-      ...(Object.keys(createdAt).length > 0 && { createdAt }),
-    });
-    const overallSalesCount = completedOrders.length;
-    const overallOrderAmount = completedOrders.reduce(
-      (acc, order) => acc + order.totalPrice,
-      0
-    );
+    // const completedOrders = await Order.find({
+    //   status: "completed",
+    //   ...(Object.keys(completedAt).length > 0 && { completedAt }),
+    // });
+    // const overallSalesCount = completedOrders.length;
+    // const overallOrderAmount = completedOrders.reduce(
+    //   (acc, order) => acc + order.totalPrice,
+    //   0
+    // );
+
+    const { orders, overallOrderAmount, overallSalesCount } =
+      await generateSalesReport(completedAt);
 
     const orderCountByTimeframe = await getOrderCountByTimeframe(
       timeframe,
@@ -86,6 +104,7 @@ export const getSalesReport: AdminRequestHandler<
     res.status(200).json({
       success: true,
       data: {
+        orders,
         totalSalesCount: overallSalesCount,
         totalSaleAmount: overallOrderAmount,
         orderCountByTimeframe,
@@ -97,6 +116,41 @@ export const getSalesReport: AdminRequestHandler<
   } catch (error) {
     next(error);
   }
+};
+
+const generateSalesReport = async (completedAt: Record<string, Date>) => {
+  const orders = await Order.find<
+    Pick<
+      OrderType,
+      | "_id"
+      | "userId"
+      | "items"
+      | "coupon"
+      | "discountType"
+      | "discountValue"
+      | "paymentMethod"
+      | "status"
+      | "completedAt"
+      | "totalPrice"
+      | "originalPrice"
+    > & { userId: { _id: string; firstName: string } }
+  >(
+    {
+      status: "completed",
+      ...(Object.keys(completedAt).length > 0 && { completedAt }),
+    },
+    "items coupon discountType discountValue paymentMethod status completedAt totalPrice originalPrice userId"
+  )
+    .sort({ completedAt: -1 })
+    .populate("userId", "firstName");
+  console.log(orders);
+  const overallSalesCount = orders.length;
+  const overallOrderAmount = orders.reduce(
+    (acc, order) => acc + order.totalPrice,
+    0
+  );
+
+  return { orders, overallOrderAmount, overallSalesCount };
 };
 
 const getOrderCountByTimeframe = async (
@@ -116,17 +170,17 @@ const getOrderCountByTimeframe = async (
 
   const matchStage: any = { status: "completed" };
   if (startDate) {
-    matchStage.createdAt = { $gte: startDate };
+    matchStage.completedAt = { $gte: startDate };
   }
   if (endDate) {
-    matchStage.createdAt = { ...matchStage.createdAt, $lte: endDate };
+    matchStage.completedAt = { ...matchStage.completedAt, $lte: endDate };
   }
 
   const result = await Order.aggregate<{ _id: string; count: number }>([
     { $match: matchStage },
     {
       $group: {
-        _id: { $dateToString: { format, date: "$createdAt" } },
+        _id: { $dateToString: { format, date: "$completedAt" } },
         count: { $sum: 1 },
       },
     },
