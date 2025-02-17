@@ -179,6 +179,15 @@ const processOrder = async ({
       }
 
       wallet.balance = wallet.balance - cart.cartTotal;
+      wallet.history = [
+        ...wallet.history,
+        {
+          amount: -cart.cartTotal,
+          logType: "order payment",
+          notes: `Payment for order`,
+          timestamp: new Date(),
+        },
+      ];
       wallet.save({ session });
     }
     // empty the cart
@@ -360,7 +369,17 @@ export const cancelOrder: UserRequestHandler<{
       order.paymentStatus = "refunded";
       await Wallet.findOneAndUpdate(
         { user: userId },
-        { $inc: { balance: order.totalPrice } },
+        {
+          $inc: { balance: order.totalPrice },
+          $push: {
+            history: {
+              amount: order.totalPrice,
+              logType: "order cancellation",
+              notes: `Cancelled order: ${order._id}`,
+              timestamp: new Date(),
+            },
+          },
+        },
         { upsert: true }
       );
       await order.save();
@@ -690,7 +709,17 @@ export const approveOrderReturn: AdminRequestHandler<{
 
     await Wallet.findOneAndUpdate(
       { user: order.userId },
-      { $inc: { balance: order.totalPrice } }
+      {
+        $inc: { balance: order.totalPrice },
+        $push: {
+          history: {
+            amount: order.totalPrice,
+            type: "refund",
+            notes: `refund for order number ${order._id}`,
+            timestamp: new Date(),
+          },
+        },
+      }
     );
 
     order.paymentStatus = "refunded";

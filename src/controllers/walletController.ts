@@ -18,7 +18,7 @@ export const getUserWallet: UserRequestHandler = async (req, res, next) => {
     }
     res.status(200).json({
       success: true,
-      data: { balance: wallet.balance },
+      data: { balance: wallet.balance, history: wallet.history },
     });
   } catch (error) {
     next(error);

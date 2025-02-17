@@ -1,5 +1,10 @@
 import mongoose from "mongoose";
-import { orderStatuses, OrderType, paymentStatuses } from "../types/order";
+import {
+  orderStatuses,
+  OrderType,
+  paymentMethods,
+  paymentStatuses,
+} from "../types/order";
 
 type IOrder = OrderType & mongoose.Document;
 
@@ -47,7 +52,7 @@ const orderSchema = new mongoose.Schema<IOrder>(
     },
     paymentMethod: {
       type: String,
-      enum: ["cod", "online", "wallet"],
+      enum: paymentMethods,
       required: true,
     },
     address: {

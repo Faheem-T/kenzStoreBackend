@@ -4,7 +4,22 @@ import mongoose from "mongoose";
 export interface WalletType {
   user: mongoose.Schema.Types.ObjectId;
   balance: number;
+  history: {
+    _id?: mongoose.Schema.Types.ObjectId;
+    amount: number;
+    logType: WalletHistoryType;
+    notes?: string;
+    timestamp: Date;
+  }[];
   // timestamps
   createdAt: Date;
   updatedAt: Date;
 }
+
+export const walletHistoryTypes = [
+  "order payment",
+  "order cancellation",
+  "refund",
+  "other",
+] as const;
+type WalletHistoryType = (typeof walletHistoryTypes)[number];
