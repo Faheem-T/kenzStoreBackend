@@ -184,6 +184,9 @@ export const getApplicableCoupons: UserRequestHandler = async (
         minOrderAmount: 1,
       }
     );
+    // applicableCoupons.filter((coupon
+    //   => coupon.redeemedUsers
+    // ))
     res.status(200).json({
       success: true,
       data: applicableCoupons,

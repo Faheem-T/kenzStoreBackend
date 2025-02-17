@@ -12,6 +12,7 @@ import {
   OrderStatus,
   orderStatuses,
   OrderType,
+  PaymentMethod,
   PlaceOrderType,
   ProductPopulatedOrderType,
 } from "../types/order";
@@ -85,8 +86,10 @@ export const placeOrder: UserRequestHandler<
       success: true,
       data: { orderId: order.id, razorpayOrder: order.paymentOrder },
       message:
-        paymentMethod === "COD"
+        paymentMethod === "cod"
           ? "Order placed successfully. Please prepare payment on delivery"
+          : paymentMethod === "wallet"
+          ? "Order placed successfully. Payment completed through wallet"
           : "Order created. Proceed to payment",
     });
   } catch (error) {
@@ -110,7 +113,7 @@ const processOrder = async ({
 }: {
   cartId: string;
   userId: string;
-  paymentMethod: string;
+  paymentMethod: PaymentMethod;
   addressId: string;
 }) => {
   const session = await mongoose.startSession();
@@ -119,9 +122,9 @@ const processOrder = async ({
     // validate cart
     const cart = await validateCart(cartId, userId);
 
-    // Don't allow COD for orders above 1000QR
-    if (cart.cartTotal > 1000 && paymentMethod === "COD") {
-      throw new Error("COD is not allowed for orders above QR 1000");
+    // Don't allow cod for orders above 1000QR
+    if (cart.cartTotal > 1000 && paymentMethod === "cod") {
+      throw new Error("cod is not allowed for orders above QR 1000");
     }
     // update stocks
     const stockUpdates = cart.items.map((item) => ({
@@ -164,13 +167,25 @@ const processOrder = async ({
 
     // create payment order according to payment method
     let ROrder = null;
-    if (paymentMethod !== "COD") {
+    if (paymentMethod === "online") {
       ROrder = await createRazorpayOrder(cart.cartTotal);
+    } else if (paymentMethod === "wallet") {
+      const wallet = await Wallet.findOne({ user: userId });
+      if (!wallet) {
+        throw new Error("Payment Method is Wallet but couldn't fetch Wallet.");
+      }
+      if (wallet.balance < cart.cartTotal) {
+        throw new Error("Insufficient wallet balance.");
+      }
+
+      wallet.balance = wallet.balance - cart.cartTotal;
+      wallet.save({ session });
     }
     // empty the cart
     await Cart.findOneAndUpdate(
       { userId, _id: cartId },
-      { items: [], coupon: null, discountType: null, discountValue: 0 }
+      { items: [], coupon: null, discountType: null, discountValue: 0 },
+      { session }
     );
 
     // create order
@@ -185,6 +200,7 @@ const processOrder = async ({
           discountType: cart.discountType,
           discountValue: cart.discountValue,
           paymentOrder: ROrder,
+          paymentStatus: paymentMethod === "wallet" ? "paid" : "incomplete",
           // TODO Other order details
         },
       ],
@@ -201,11 +217,7 @@ const processOrder = async ({
   }
 };
 
-const validateCart = async (
-  //   cart: PickProductPopulatedCartType<"stock" | "price" | "isDeleted" | "listed">
-  cartId: string,
-  userId: string
-) => {
+const validateCart = async (cartId: string, userId: string) => {
   // fetch cart
   const cart = await Cart.findOne({ _id: cartId, userId })
     .populate<{
@@ -753,10 +765,10 @@ export const retryPayment: UserRequestHandler<{ orderId: string }> = async (
       return;
     }
 
-    if (order.paymentMethod === "COD") {
+    if (order.paymentMethod === "cod") {
       res.status(400).json({
         success: false,
-        message: "Payment method is 'COD'",
+        message: "Payment method is 'cod'",
       });
       return;
     }

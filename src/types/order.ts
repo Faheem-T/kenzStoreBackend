@@ -52,7 +52,7 @@ export interface PlaceOrderType extends Pick<OrderType, "paymentMethod"> {
 }
 
 // SHARED TYPE: Sync with frontend
-export const paymentMethods = ["COD", "Credit Card", "Debit Card"] as const;
+export const paymentMethods = ["cod", "online", "wallet"] as const;
 export type PaymentMethod = (typeof paymentMethods)[number];
 
 // SHARED TYPE: Sync with frontend
