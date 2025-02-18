@@ -169,7 +169,7 @@ export const getApplicableCoupons: UserRequestHandler = async (
       });
       return;
     }
-    const applicableCoupons = await Coupon.find(
+    let applicableCoupons = await Coupon.find(
       {
         minOrderAmount: { $lte: userCart.cartTotal },
         isDeleted: { $ne: true },
@@ -182,11 +182,18 @@ export const getApplicableCoupons: UserRequestHandler = async (
         discountValue: 1,
         validUntil: 1,
         minOrderAmount: 1,
+        redeemedUsers: 1,
+        limitPerUser: 1,
       }
-    );
-    // applicableCoupons.filter((coupon
-    //   => coupon.redeemedUsers
-    // ))
+    ).lean();
+    console.log(applicableCoupons);
+    applicableCoupons = applicableCoupons.filter((coupon) => {
+      // if (!coupon.redeemedUsers)
+      const userUsedCount =
+        coupon.redeemedUsers.filter((id) => userId === id.toString()).length ??
+        0;
+      return userUsedCount < coupon.limitPerUser;
+    });
     res.status(200).json({
       success: true,
       data: applicableCoupons,
