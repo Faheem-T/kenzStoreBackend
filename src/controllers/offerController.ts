@@ -91,7 +91,9 @@ export const getAllOfferProducts: AdminRequestHandler = async (
 ) => {
   try {
     const foundProductOffers = await Product.find({
-      discountEndDate: { $gt: new Date() },
+      isDeleted: { $ne: true },
+      discountValue: { $nin: [null, 0] },
+      // discountEndDate: { $gt: new Date() },
       // discountStartDate: { $lt: new Date() },
     });
     res.status(200).json({
@@ -110,7 +112,9 @@ export const getAllOfferCategories: AdminRequestHandler = async (
 ) => {
   try {
     const foundCategoryOffers = await Category.find({
-      discountEndDate: { $gt: new Date() },
+      isDeleted: { $ne: true },
+      discountValue: { $nin: [null, 0] },
+      // discountEndDate: { $gt: new Date() },
       // discountStartDate: { $lt: new Date() },
     });
     res.status(200).json({
