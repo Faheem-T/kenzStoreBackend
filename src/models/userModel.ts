@@ -28,6 +28,16 @@ const userSchema = new mongoose.Schema<IUser>(
       type: Boolean,
       default: false,
     },
+    referralCode: {
+      type: String,
+      default: null,
+      minlength: 6,
+      maxlength: 6,
+    },
+    referredBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    },
   },
   { timestamps: true }
 );

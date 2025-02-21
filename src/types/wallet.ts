@@ -16,10 +16,12 @@ export interface WalletType {
   updatedAt: Date;
 }
 
+// SHARED
 export const walletHistoryTypes = [
   "order payment",
   "order cancellation",
   "refund",
+  "referral reward",
   "other",
 ] as const;
 type WalletHistoryType = (typeof walletHistoryTypes)[number];

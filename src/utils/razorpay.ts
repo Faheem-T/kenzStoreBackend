@@ -16,8 +16,9 @@ const instance = new Razorpay({
 });
 
 export const createRazorpayOrder = async (amount: number) => {
+  console.log("Amount: ", amount * 100, typeof (amount * 100));
   const options = {
-    amount: amount * 100,
+    amount: Math.floor(amount * 100 * 100) / 100,
     currency: "INR",
     // receipt: "order_rcptid_11",
   };

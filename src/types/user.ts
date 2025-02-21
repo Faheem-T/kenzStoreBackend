@@ -1,3 +1,5 @@
+import mongoose from "mongoose";
+
 // SHARED TYPE: Sync with frontend
 export interface UserType {
   _id: string;
@@ -7,9 +9,11 @@ export interface UserType {
   DOB?: Date;
   password: string;
   // user verification fields
-  expiresAt: Date;
+  expiresAt: Date | null;
   isVerified: boolean;
   isBlocked: boolean;
+  referralCode: string;
+  referredBy: mongoose.Types.ObjectId;
   // timestamp fields
   createdAt: Date;
   updatedAt: Date;

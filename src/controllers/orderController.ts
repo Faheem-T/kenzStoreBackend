@@ -485,11 +485,13 @@ export const getAllOrders: AdminRequestHandler<
   }
 
   try {
-    const foundOrders = await Order.find(findQuery).populate<{
-      items: ProductPopulatedItem<
-        Pick<ProductType, "name" | "description" | "images" | "_id">
-      >[];
-    }>("items.productId", "name description images _id");
+    const foundOrders = await Order.find(findQuery)
+      .populate<{
+        items: ProductPopulatedItem<
+          Pick<ProductType, "name" | "description" | "images" | "_id">
+        >[];
+      }>("items.productId", "name description images _id")
+      .sort({ createdAt: -1 });
     res.status(200).json({
       success: true,
       data: foundOrders,

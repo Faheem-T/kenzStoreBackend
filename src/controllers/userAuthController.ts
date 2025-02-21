@@ -25,6 +25,10 @@ import {
   sendPasswordResetLinktoEmail,
 } from "../utils/nodeMailer";
 import { OTP } from "../models/otpModel";
+import { generateReferralCode } from "../utils/generateReferralCode";
+import { Wallet } from "../models/walletModel";
+
+const REFERRAL_REWARD_AMOUNT = 200;
 
 export const getMe: RequestHandler = async (req, res, next) => {
   const refreshToken = req.cookies.refreshToken;
@@ -81,6 +85,7 @@ export const getMe: RequestHandler = async (req, res, next) => {
             lastName: foundUser.lastName,
             email: foundUser.email,
             id: foundUser.id,
+            referralCode: foundUser.referralCode,
           },
           isAdmin: false,
         },
@@ -126,9 +131,32 @@ export const postRegister: RequestHandler<any, any, registerBodyType> = async (
     return next(error);
   }
 
-  let newUser;
+  const { email, firstName, password, referralCode } = req.body;
+
+  let referredByUser;
+  if (referralCode) {
+    referredByUser = await User.findOne({
+      referralCode: referralCode.toUpperCase(),
+    });
+    if (!referredByUser) {
+      res.status(400).json({
+        success: false,
+        issues: [{ field: "referralCode", message: "Invalid referral code" }],
+      });
+      return;
+    }
+  }
+
+  const newReferralCode = generateReferralCode();
+
   try {
-    newUser = await User.create(req.body);
+    await User.create({
+      firstName,
+      email,
+      password,
+      referredBy: referredByUser ? referredByUser._id : null,
+      referralCode: newReferralCode,
+    });
   } catch (error: any) {
     return next(error);
   }
@@ -171,18 +199,56 @@ export const postVerifyOtp: RequestHandler = async (req, res, next) => {
       foundOtp.expiresAt > new Date() // make sure otp has not expired
     ) {
       // change verified to true on user object
-      const updatedUser = await User.findOneAndUpdate(
-        { email, expiresAt: { $gt: new Date(Date.now()) } },
-        { isVerified: true, expiresAt: null }
-      );
+      const foundUser = await User.findOne({
+        email,
+        expiresAt: { $gt: new Date(Date.now()) },
+      });
       // make sure user has not expired
-      if (!updatedUser) {
+      if (!foundUser) {
         res.status(400).json({
           success: false,
           message: "Registration time exceeded. Please register again.",
         });
         return;
       }
+
+      foundUser.isVerified = true;
+      foundUser.expiresAt = null;
+      await foundUser.save();
+
+      // Check for referral and update wallet for referrer and this user
+      if (foundUser.referredBy) {
+        const date = new Date();
+
+        let referredByUserWallet = await Wallet.findOne({
+          user: foundUser.referredBy,
+        });
+        if (!referredByUserWallet) {
+          referredByUserWallet = new Wallet({ user: foundUser.referredBy });
+        }
+        referredByUserWallet.balance += REFERRAL_REWARD_AMOUNT;
+        referredByUserWallet.history.push({
+          amount: REFERRAL_REWARD_AMOUNT,
+          timestamp: date,
+          logType: "referral reward",
+          notes: `Referred ${foundUser._id}`,
+        });
+        await referredByUserWallet.save();
+
+        let userWallet = await Wallet.findOne({ user: foundUser._id });
+        if (!userWallet) {
+          userWallet = new Wallet({ user: foundUser._id });
+        }
+        userWallet.balance += REFERRAL_REWARD_AMOUNT;
+        userWallet.history.push({
+          amount: REFERRAL_REWARD_AMOUNT,
+          timestamp: date,
+          logType: "referral reward",
+          notes: `Got referred by ${foundUser.referredBy}`,
+        });
+        userWallet.save();
+      }
+
       res.status(200).json({
         success: true,
         message: "Email has been verified successfully! You may Log In now.",
@@ -320,6 +386,7 @@ export const postLogin: RequestHandler<any, any, loginBodyType> = async (
             lastName: foundUser.lastName,
             email: foundUser.email,
             id: foundUser._id,
+            referralCode: foundUser.referralCode,
           },
         },
       });
