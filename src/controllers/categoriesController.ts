@@ -2,14 +2,206 @@ import { RequestHandler } from "express";
 import { Category } from "../models/categoryModel";
 import { populateCategory } from "../utils/populateCategoryHelper";
 import { UpdateCategoryType } from "../types/category";
+import { Product } from "../models/productModel";
 
 const categoryProjection = {
   name: 1,
   parentCategory: 1,
   description: 1,
+  image: 1,
   listed: 1,
   createdAt: 1,
   updatedAt: 1,
+};
+
+export const getCategoryProducts: RequestHandler<
+  { slug: string },
+  any,
+  any,
+  {
+    page: string;
+    sort: "asc" | "desc";
+    sortBy: string;
+    limit: string;
+    q: string;
+  }
+> = async (req, res, next) => {
+  const {
+    page = "1",
+    sort = "asc",
+    limit = "10",
+    q = "",
+    sortBy = "createdAt",
+  } = req.query;
+  const slug = req.params.slug;
+  if (!slug) {
+    res.status(400).json({
+      success: false,
+      message: "'slug' is required",
+    });
+    return;
+  }
+
+  const pageNum = parseInt(page, 10);
+  const limitNum = parseInt(limit, 10);
+  const sortOrder = sort === "asc" ? 1 : -1;
+
+  if (isNaN(pageNum) || isNaN(limitNum) || pageNum < 1 || limitNum < 1) {
+    res
+      .status(400)
+      .json({ success: false, message: "Invalid pagination parameters" });
+    return;
+  }
+
+  const validSortFields = ["createdAt", "finalPrice", "name", "avgRating"];
+  if (!validSortFields.includes(sortBy)) {
+    res.status(400).json({
+      success: false,
+      message: `Invalid sortBy Field. Allowed fields are: ${validSortFields.join(
+        ", "
+      )}`,
+    });
+    return;
+  }
+
+  try {
+    const foundCategory = await Category.findOne({ slug }).lean();
+    if (!foundCategory) {
+      res.status(400).json({
+        success: false,
+        message: `Couldn't find category with slug ${slug}`,
+      });
+      return;
+    }
+
+    const matchStage: any = {
+      isDeleted: { $ne: true },
+      category: foundCategory._id,
+      $or: [
+        { name: { $regex: q, $options: "i" } },
+        { description: { $regex: q, $options: "i" } },
+      ],
+    };
+
+    // const categoryProducts = await Product.find({
+    //   category: foundCategory._id,
+    // });
+
+    const categoryProducts = await Product.aggregate([
+      { $match: matchStage },
+      {
+        $lookup: {
+          from: "categories",
+          localField: "category",
+          foreignField: "_id",
+          as: "category",
+        },
+      },
+      {
+        $unwind: { path: "$category", preserveNullAndEmptyArrays: true },
+      },
+      {
+        $addFields: {
+          productDiscount: {
+            $cond: {
+              if: {
+                $and: [
+                  "$discountType",
+                  "$discountValue",
+                  "$discountStartDate",
+                  "$discountEndDate",
+                  { $lte: ["$discountStartDate", new Date()] },
+                  { $gte: ["$discountEndDate", new Date()] },
+                ],
+              },
+              then: {
+                $cond: {
+                  if: { $eq: ["$discountType", "percentage"] },
+                  then: {
+                    $multiply: ["$price", { $divide: ["$discountValue", 100] }],
+                  },
+                  else: "$discountValue",
+                },
+              },
+              else: 0,
+            },
+          },
+          categoryDiscount: {
+            $cond: {
+              if: {
+                $and: [
+                  "$category.discountType",
+                  "$category.discountValue",
+                  "$category.discountStartDate",
+                  "$category.discountEndDate",
+                  { $lte: ["$category.discountStartDate", new Date()] },
+                  { $gte: ["$category.discountEndDate", new Date()] },
+                ],
+              },
+              then: {
+                $cond: {
+                  if: { $eq: ["$category.discountType", "percentage"] },
+                  then: {
+                    $multiply: [
+                      "$price",
+                      { $divide: ["$category.discountValue", 100] },
+                    ],
+                  },
+                  else: "$category.discountValue",
+                },
+              },
+              else: 0,
+            },
+          },
+        },
+      },
+      {
+        $addFields: {
+          effectiveDiscount: {
+            $cond: {
+              if: { $gt: ["$productDiscount", "$categoryDiscount"] },
+              then: {
+                name: "$discountName",
+                type: "$discountType",
+                value: "$discountValue",
+                startDate: "$discountStartDate",
+                endDate: "$discountEndDate",
+                discountApplied: "$productDiscount",
+              },
+              else: {
+                name: "$category.discountName",
+                type: "$category.discountType",
+                value: "$category.discountValue",
+                startDate: "$category.discountStartDate",
+                endDate: "$category.discountEndDate",
+                discountApplied: "$categoryDiscount",
+              },
+            },
+          },
+        },
+      },
+      {
+        $addFields: {
+          finalPrice: {
+            $subtract: ["$price", "$effectiveDiscount.discountApplied"],
+          },
+        },
+      },
+      { $sort: { [sortBy]: sortOrder } },
+      { $skip: (pageNum - 1) * limitNum },
+      { $limit: limitNum },
+    ]);
+
+    res.status(200).json({
+      success: true,
+      data: {
+        products: categoryProducts,
+        category: foundCategory,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
 };
 
 export const getCategory: RequestHandler<{ id: string }> = async (

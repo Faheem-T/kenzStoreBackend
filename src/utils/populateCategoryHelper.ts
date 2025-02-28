@@ -1,5 +1,7 @@
 const select =
-  "name parentCategory discountName discountType discountValue discountStartDate discountEndDate";
+  "name slug parentCategory discountName discountType discountValue discountStartDate discountEndDate";
+
+const populateSelect = "name slug";
 export function populateCategory(depth: number = 3, path: string = "category") {
   const populateRecursive = (currentDepth: number): any => {
     if (currentDepth <= 0) return null;
@@ -8,7 +10,7 @@ export function populateCategory(depth: number = 3, path: string = "category") {
       path: "parentCategory",
       model: "Category",
       populate: populateRecursive(currentDepth - 1),
-      select,
+      populateSelect,
     };
   };
 

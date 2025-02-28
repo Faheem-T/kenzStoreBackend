@@ -227,12 +227,15 @@ export const postVerifyOtp: RequestHandler = async (req, res, next) => {
           referredByUserWallet = new Wallet({ user: foundUser.referredBy });
         }
         referredByUserWallet.balance += REFERRAL_REWARD_AMOUNT;
-        referredByUserWallet.history.push({
-          amount: REFERRAL_REWARD_AMOUNT,
-          timestamp: date,
-          logType: "referral reward",
-          notes: `Referred ${foundUser._id}`,
-        });
+        referredByUserWallet.history = [
+          ...referredByUserWallet.history,
+          {
+            amount: REFERRAL_REWARD_AMOUNT,
+            timestamp: date,
+            logType: "referral reward",
+            notes: `Referred ${foundUser._id}`,
+          },
+        ];
         await referredByUserWallet.save();
 
         let userWallet = await Wallet.findOne({ user: foundUser._id });
@@ -240,13 +243,16 @@ export const postVerifyOtp: RequestHandler = async (req, res, next) => {
           userWallet = new Wallet({ user: foundUser._id });
         }
         userWallet.balance += REFERRAL_REWARD_AMOUNT;
-        userWallet.history.push({
-          amount: REFERRAL_REWARD_AMOUNT,
-          timestamp: date,
-          logType: "referral reward",
-          notes: `Got referred by ${foundUser.referredBy}`,
-        });
-        userWallet.save();
+        userWallet.history = [
+          ...userWallet.history,
+          {
+            amount: REFERRAL_REWARD_AMOUNT,
+            timestamp: date,
+            logType: "referral reward",
+            notes: `Got referred by ${foundUser.referredBy}`,
+          },
+        ];
+        await userWallet.save();
       }
 
       res.status(200).json({

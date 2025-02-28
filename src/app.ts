@@ -17,7 +17,9 @@ if (process.env.NODE_ENV === "development") {
   app.use(morgan("dev"));
 }
 
-app.use(cors({ credentials: true, origin: "http://localhost:5173" }));
+app.use(
+  cors({ credentials: true, origin: "https://www.kenzstore.faheem-mb.com" })
+);
 app.use(Express.json());
 app.use(Express.urlencoded({ extended: false }));
 app.use(cookieParser());

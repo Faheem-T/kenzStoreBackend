@@ -5,6 +5,7 @@
   "scripts": {
     "test": "jest",
     "build": "tsc --build",
+    "start": "node ./dist/app.js",
     "start:dev": "nodemon ./src/app.ts",
     "dev": "tsc --noEmit && tsx watch ./src/app.ts"
   },

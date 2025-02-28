@@ -82,6 +82,8 @@ export const placeOrder: UserRequestHandler<
       addressId,
     });
 
+    console.log("Order Placement ROrder: ", order.paymentOrder);
+
     res.status(200).json({
       success: true,
       data: { orderId: order.id, razorpayOrder: order.paymentOrder },
@@ -716,7 +718,7 @@ export const approveOrderReturn: AdminRequestHandler<{
         $push: {
           history: {
             amount: order.totalPrice,
-            type: "refund",
+            logType: "refund",
             notes: `refund for order number ${order._id}`,
             timestamp: new Date(),
           },
@@ -815,6 +817,7 @@ export const retryPayment: UserRequestHandler<{ orderId: string }> = async (
     const ROrder = await createRazorpayOrder(order.totalPrice);
     order.paymentOrder = ROrder;
     await order.save();
+    console.log("Retry ROrder: ", ROrder);
     res.status(200).json({
       success: true,
       data: { razorpayOrder: ROrder },
