@@ -446,7 +446,7 @@ export const getAllUsersOrders: UserRequestHandler<
   const userId = req.userId as string;
   try {
     const totalOrders = await Order.find({ userId }).countDocuments();
-    const totalPages = Math.ceil(totalOrders / limitNum);
+    const totalPages = Math.ceil(totalOrders / limitNum) || 1;
     const foundOrders = await Order.find({ userId })
       .skip((pageNum - 1) * limitNum)
       .limit(limitNum)

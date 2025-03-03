@@ -1,38 +1,15 @@
 version: "3.9"
 
 services:
-  api-prod-1:
+  api-prod:
     build:
       context: .
       dockerfile: Dockerfile
       target: production
+    image: "faheem222/kenzstore:latest"
     expose:
       - '3001'
     ports:
       - '3001:3001'
-    environment:
-      - APP_NAME=App1
-  api-prod-2:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: production
-    expose:
-      - '3002'
-    ports:
-      - '3002:3001'
-    environment:
-      - APP_NAME=App2
-  api-prod-3:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: production
-    expose:
-      - '3003'
-    ports:
-      - '3003:3001'
-    environment:
-      - APP_NAME=App3
 
 

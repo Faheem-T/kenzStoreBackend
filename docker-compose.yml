@@ -19,11 +19,12 @@ services:
       context: .
       dockerfile: Dockerfile
       target: source
-  'faheem222/api-prod':
+  api-prod:
     build:
       context: .
       dockerfile: Dockerfile
       target: production
+    image: "faheem222/kenzstore:latest"
     expose:
       - '3001'
     ports:

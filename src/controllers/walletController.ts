@@ -1,8 +1,26 @@
 import { Wallet } from "../models/walletModel";
 import { UserRequestHandler } from "../types/authenticatedRequest";
 
-export const getUserWallet: UserRequestHandler = async (req, res, next) => {
+export const getUserWallet: UserRequestHandler<
+  {},
+  any,
+  any,
+  { page?: string; limit?: string }
+> = async (req, res, next) => {
   const userId = req.userId as string;
+
+  const { page = "1", limit = "10" } = req.query;
+
+  const pageNum = parseInt(page, 10);
+  const limitNum = parseInt(limit, 10);
+
+  if (isNaN(pageNum) || isNaN(limitNum) || pageNum < 1 || limitNum < 1) {
+    res
+      .status(400)
+      .json({ success: false, message: "Invalid pagination parameters" });
+    return;
+  }
+
   try {
     let wallet = await Wallet.findOne({ user: userId });
     if (!wallet) {
@@ -16,9 +34,21 @@ export const getUserWallet: UserRequestHandler = async (req, res, next) => {
       });
       return;
     }
+
+    const totalHistoryItems = wallet.history.length;
+    const totalPages = Math.ceil(totalHistoryItems / limitNum) || 1;
+    const history = wallet.history
+      .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
+      .splice((pageNum - 1) * limitNum, limitNum);
+
     res.status(200).json({
       success: true,
-      data: { balance: wallet.balance, history: wallet.history },
+      data: {
+        balance: wallet.balance,
+        history,
+      },
+      currentPage: pageNum,
+      totalPages,
     });
   } catch (error) {
     next(error);
