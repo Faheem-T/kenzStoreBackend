@@ -33,6 +33,8 @@ if (!RAZORPAY_KEY_SECRET) {
   throw new Error("RAZORPAY_KEY_SECRET not found. Set it in your .env");
 }
 
+const validSortFields = ["createdAt", "updatedAt"];
+
 // SHARED TYPE: Sync with frontend
 interface PlaceOrderResponse {
   success: boolean;
@@ -415,9 +417,9 @@ export const getAllUsersOrders: UserRequestHandler<
 > = async (req, res, next) => {
   const {
     page = "1",
-    sort = "asc",
+    sort = "desc",
     limit = "10",
-    sortBy = "createdAt",
+    sortBy = "updatedAt",
   } = req.query;
 
   const pageNum = parseInt(page, 10);
@@ -431,7 +433,6 @@ export const getAllUsersOrders: UserRequestHandler<
     return;
   }
 
-  const validSortFields = ["createdAt"];
   if (!validSortFields.includes(sortBy)) {
     res.status(400).json({
       success: false,
@@ -509,12 +510,45 @@ export const getOrder: UserRequestHandler<{
 
 export const getAllOrders: AdminRequestHandler<
   {},
+  BaseResponse<GetUserOrder[]> & { currentPage?: number; totalPages?: number },
   any,
-  any,
-  { orderStatus?: OrderStatus }
+  {
+    orderStatus: OrderStatus;
+    page: string;
+    sort: "asc" | "desc";
+    sortBy: string;
+    limit: string;
+  }
 > = async (req, res, next) => {
   const adminId = req.adminId;
-  const { orderStatus } = req.query;
+  const {
+    orderStatus,
+    page = "1",
+    sort = "desc",
+    sortBy = "updatedAt",
+    limit = "10",
+  } = req.query;
+
+  const pageNum = parseInt(page, 10);
+  const limitNum = parseInt(limit, 10);
+  const sortOrder = sort === "asc" ? 1 : -1;
+
+  if (isNaN(pageNum) || isNaN(limitNum) || pageNum < 1 || limitNum < 1) {
+    res
+      .status(400)
+      .json({ success: false, message: "Invalid pagination parameters" });
+    return;
+  }
+
+  if (!validSortFields.includes(sortBy)) {
+    res.status(400).json({
+      success: false,
+      message: `Invalid sortBy Field. Allowed fields are: ${validSortFields.join(
+        ", "
+      )}`,
+    });
+    return;
+  }
   if (!adminId) {
     res.status(403).json({
       success: false,
@@ -529,16 +563,26 @@ export const getAllOrders: AdminRequestHandler<
   }
 
   try {
+    const totalOrders = await Order.find(findQuery).countDocuments();
+    const totalPages = Math.ceil(totalOrders / limitNum);
     const foundOrders = await Order.find(findQuery)
+      .skip((pageNum - 1) * limitNum)
+      .limit(limitNum)
+      .sort({ [sortBy]: sortOrder })
       .populate<{
         items: ProductPopulatedItem<
-          Pick<ProductType, "name" | "description" | "images" | "_id">
+          Pick<
+            ProductType,
+            "name" | "description" | "images" | "_id" | "effectiveDiscount"
+          >
         >[];
       }>("items.productId", "name description images _id")
-      .sort({ createdAt: -1 });
+      .sort({ [sortBy]: sortOrder });
     res.status(200).json({
       success: true,
       data: foundOrders,
+      currentPage: pageNum,
+      totalPages,
     });
   } catch (error) {
     next(error);
