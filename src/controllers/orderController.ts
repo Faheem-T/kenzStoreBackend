@@ -404,11 +404,52 @@ export const cancelOrder: UserRequestHandler<{
 
 export const getAllUsersOrders: UserRequestHandler<
   {},
-  BaseResponse<GetUserOrder[]>
+  BaseResponse<GetUserOrder[]> & { currentPage?: number; totalPages?: number },
+  any,
+  {
+    page: string;
+    sort: "asc" | "desc";
+    sortBy: string;
+    limit: string;
+  }
 > = async (req, res, next) => {
+  const {
+    page = "1",
+    sort = "asc",
+    limit = "10",
+    sortBy = "createdAt",
+  } = req.query;
+
+  const pageNum = parseInt(page, 10);
+  const limitNum = parseInt(limit, 10);
+  const sortOrder = sort === "asc" ? 1 : -1;
+
+  if (isNaN(pageNum) || isNaN(limitNum) || pageNum < 1 || limitNum < 1) {
+    res
+      .status(400)
+      .json({ success: false, message: "Invalid pagination parameters" });
+    return;
+  }
+
+  const validSortFields = ["createdAt"];
+  if (!validSortFields.includes(sortBy)) {
+    res.status(400).json({
+      success: false,
+      message: `Invalid sortBy Field. Allowed fields are: ${validSortFields.join(
+        ", "
+      )}`,
+    });
+    return;
+  }
+
   const userId = req.userId as string;
   try {
+    const totalOrders = await Order.find({ userId }).countDocuments();
+    const totalPages = Math.ceil(totalOrders / limitNum);
     const foundOrders = await Order.find({ userId })
+      .skip((pageNum - 1) * limitNum)
+      .limit(limitNum)
+      .sort({ [sortBy]: sortOrder })
       .populate<{
         items: ProductPopulatedItem<
           Pick<
@@ -416,8 +457,7 @@ export const getAllUsersOrders: UserRequestHandler<
             "name" | "description" | "images" | "_id" | "effectiveDiscount"
           >
         >[];
-      }>("items.productId", "name description images _id")
-      .sort({ createdAt: -1 });
+      }>("items.productId", "name description images _id");
     if (!foundOrders) {
       res.status(400).json({
         success: false,
@@ -428,6 +468,8 @@ export const getAllUsersOrders: UserRequestHandler<
     res.status(200).json({
       success: true,
       data: foundOrders,
+      currentPage: pageNum,
+      totalPages,
     });
   } catch (error) {
     next(error);

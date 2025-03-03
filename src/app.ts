@@ -18,7 +18,14 @@ if (process.env.NODE_ENV === "development") {
 }
 
 app.use(
-  cors({ credentials: true, origin: "https://www.kenzstore.faheem-mb.com" })
+  cors({
+    credentials: true,
+    // origin:
+    //   process.env.NODE_ENV === "production"
+    //     ? "https://www.kenzstore.faheem-mb.com"
+    //     : "http://localhost:5173",
+    origin: process.env.FRONTEND_URL,
+  })
 );
 app.use(Express.json());
 app.use(Express.urlencoded({ extended: false }));

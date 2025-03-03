@@ -253,6 +253,8 @@ export const getProducts: RequestHandler<
   }
 
   try {
+    const productsCount = await Product.find(matchStage).countDocuments();
+    const totalPages = Math.ceil(productsCount / limitNum);
     const foundProducts = await Product.aggregate([
       { $match: matchStage },
       {
@@ -353,16 +355,17 @@ export const getProducts: RequestHandler<
           },
         },
       },
-      { $sort: { [sortBy]: sortOrder } },
       { $skip: (pageNum - 1) * limitNum },
       { $limit: limitNum },
+      { $sort: { [sortBy]: sortOrder } },
     ]);
     // console.log(foundProducts);
 
     res.status(200).json({
       success: true,
-      count: foundProducts.length,
       data: foundProducts,
+      currentPage: pageNum,
+      totalPages,
     });
   } catch (error) {
     next(error);
