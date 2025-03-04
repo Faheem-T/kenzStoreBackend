@@ -369,6 +369,20 @@ export const cancelOrder: UserRequestHandler<{
   order.status = "cancelled";
   order.cancelledAt = new Date();
   try {
+    // updating product stock
+    try {
+      order.items.forEach(async (item) => {
+        const { productId, quantity } = item;
+        await Product.findByIdAndUpdate(productId, {
+          $inc: { stock: quantity },
+        });
+      });
+    } catch (error) {
+      console.log(error);
+      throw new Error("Error while updating product stocks");
+    }
+
+    // refunding if payment already completed
     if (order.paymentStatus === "paid") {
       order.paymentStatus = "refunded";
       await Wallet.findOneAndUpdate(
@@ -386,7 +400,9 @@ export const cancelOrder: UserRequestHandler<{
         },
         { upsert: true }
       );
+
       await order.save();
+
       res.status(200).json({
         success: true,
         message:
