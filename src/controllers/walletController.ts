@@ -1,3 +1,4 @@
+import { HttpStatus } from "../utils/httpenum";
 import { Wallet } from "../models/walletModel";
 import { UserRequestHandler } from "../types/authenticatedRequest";
 
@@ -28,7 +29,7 @@ export const getUserWallet: UserRequestHandler<
       wallet = await Wallet.create({ user: userId, balance: 0 });
     }
     if (!wallet) {
-      res.status(400).json({
+      res.status(HttpStatus.BAD_REQUEST).json({
         success: false,
         message: "Couldn't find wallet",
       });
@@ -41,7 +42,7 @@ export const getUserWallet: UserRequestHandler<
       .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
       .splice((pageNum - 1) * limitNum, limitNum);
 
-    res.status(200).json({
+    res.status(HttpStatus.OK).json({
       success: true,
       data: {
         balance: wallet.balance,

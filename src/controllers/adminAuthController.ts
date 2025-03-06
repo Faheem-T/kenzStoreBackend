@@ -8,6 +8,7 @@ import {
   REFRESH_MAX_AGE,
   verifyAdminRefreshToken,
 } from "../utils/authJwtHelper";
+import { HttpStatus } from "../utils/httpenum";
 
 export const postAdminLogin: RequestHandler<void, any, AdminType> = async (
   req,
@@ -19,7 +20,7 @@ export const postAdminLogin: RequestHandler<void, any, AdminType> = async (
     const foundAdmin = await Admin.findOne({ username }).exec();
 
     if (!foundAdmin) {
-      res.status(404).json({
+      res.status(HttpStatus.NOT_FOUND).json({
         success: false,
         message: "Invalid Username",
       });
@@ -27,7 +28,7 @@ export const postAdminLogin: RequestHandler<void, any, AdminType> = async (
     }
 
     if (!validatePassword(password, foundAdmin.password)) {
-      res.status(400).json({
+      res.status(HttpStatus.BAD_REQUEST).json({
         success: false,
         message: "Wrong password!",
       });
@@ -68,7 +69,7 @@ export const postCreateAdmin: RequestHandler<void, any, AdminType> = async (
   req.body.password = hashPassword(req.body.password);
   try {
     const createdAdmin = await Admin.create({ ...req.body });
-    res.status(201).json({
+    res.status(HttpStatus.CREATED).json({
       success: true,
       data: createdAdmin,
     });
@@ -80,7 +81,7 @@ export const postCreateAdmin: RequestHandler<void, any, AdminType> = async (
 export const getAdminRefresh: RequestHandler = (req, res, next) => {
   const refreshToken = req.cookies?.refreshToken;
   if (!refreshToken) {
-    res.status(400).json({
+    res.status(HttpStatus.BAD_REQUEST).json({
       success: false,
       message: "Refresh token not found",
     });
@@ -89,7 +90,7 @@ export const getAdminRefresh: RequestHandler = (req, res, next) => {
   }
   const decoded = verifyAdminRefreshToken(refreshToken);
   if (!decoded) {
-    res.status(400).json({
+    res.status(HttpStatus.BAD_REQUEST).json({
       success: false,
       message: "Invalid refresh token",
     });
@@ -99,7 +100,7 @@ export const getAdminRefresh: RequestHandler = (req, res, next) => {
   // generate new access token using decoded id
   const { adminId } = decoded;
   const accessToken = generateAdminAccessToken(adminId);
-  res.status(200).json({
+  res.status(HttpStatus.OK).json({
     success: "true",
     data: {
       accessToken,

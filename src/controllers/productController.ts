@@ -1,3 +1,4 @@
+import { HttpStatus } from "../utils/httpenum";
 import { RequestHandler } from "express";
 import { Product } from "../models/productModel";
 import { populateCategory } from "../utils/populateCategoryHelper";
@@ -60,12 +61,12 @@ export const getProduct: RequestHandler<{ id: string }> = async (
     // const foundProduct = await Product.findById(productId).populate("category");
 
     if (!foundProduct?.isDeleted) {
-      res.status(200).json({
+      res.status(HttpStatus.OK).json({
         success: true,
         data: foundProduct,
       });
     } else {
-      res.status(404).json({
+      res.status(HttpStatus.NOT_FOUND).json({
         success: false,
         message: "Product not found",
       });
@@ -84,7 +85,7 @@ export const postProduct: RequestHandler<any, any, CreateProductType> = async (
   // console.log("Create Product Body: \n", req.body);
   try {
     const createdProduct = await Product.create({ ...req.body });
-    res.status(201).json({
+    res.status(HttpStatus.CREATED).json({
       success: true,
       data: createdProduct,
     });
@@ -103,7 +104,7 @@ export const patchProduct: RequestHandler<
   // console.log(req.body);
   try {
     const updatedProduct = await Product.findByIdAndUpdate(id, { ...req.body });
-    res.status(200).json({
+    res.status(HttpStatus.OK).json({
       success: true,
       data: updatedProduct,
     });
@@ -141,7 +142,7 @@ export const patchProduct: RequestHandler<
 
 //   // Validate parsed parameters
 //   if (isNaN(pageNum) || isNaN(limitNum) || pageNum < 1 || limitNum < 1) {
-//     res.status(400).json({
+//     res.status(HttpStatus.BAD_REQUEST).json({
 //       success: false,
 //       message: "Invalid pagination parameters",
 //     });
@@ -151,7 +152,7 @@ export const patchProduct: RequestHandler<
 //   // Whitelist of fields allowed for sorting
 //   const validSortFields = ["createdAt", "finalPrice", "name", "avgRating"];
 //   if (!validSortFields.includes(sortBy)) {
-//     res.status(400).json({
+//     res.status(HttpStatus.BAD_REQUEST).json({
 //       success: false,
 //       message: `Invalid sortBy Field. Allowed fields are: ${validSortFields.join(
 //         ", "
@@ -186,7 +187,7 @@ export const patchProduct: RequestHandler<
 
 //     console.log(foundProducts);
 
-//     res.status(200).json({
+//     res.status(HttpStatus.OK).json({
 //       success: true,
 //       count: foundProducts.length,
 //       data: foundProducts,
@@ -231,7 +232,7 @@ export const getProducts: RequestHandler<
 
   const validSortFields = ["createdAt", "finalPrice", "name", "avgRating"];
   if (!validSortFields.includes(sortBy)) {
-    res.status(400).json({
+    res.status(HttpStatus.BAD_REQUEST).json({
       success: false,
       message: `Invalid sortBy Field. Allowed fields are: ${validSortFields.join(
         ", "
@@ -361,7 +362,7 @@ export const getProducts: RequestHandler<
     ]);
     // console.log(foundProducts);
 
-    res.status(200).json({
+    res.status(HttpStatus.OK).json({
       success: true,
       data: foundProducts,
       currentPage: pageNum,
@@ -379,7 +380,7 @@ export const getHeroProducts: RequestHandler = async (req, res, next) => {
       { isHero: true, listed: true },
       productProjection
     ).populate("category");
-    res.status(200).json({
+    res.status(HttpStatus.OK).json({
       success: true,
       data: heroProducts,
       count: heroProducts.length,
@@ -405,7 +406,7 @@ export const getRelatedProducts: RequestHandler<
   try {
     const currentProduct = await Product.findById(id);
     if (!currentProduct) {
-      res.status(404).json({
+      res.status(HttpStatus.NOT_FOUND).json({
         success: false,
         message: "Product not found",
       });
@@ -455,7 +456,7 @@ export const getRelatedProducts: RequestHandler<
     //   },
     // ]);
 
-    res.status(200).json({
+    res.status(HttpStatus.OK).json({
       success: true,
       data: relatedProducts,
     });
@@ -472,7 +473,7 @@ export const deleteProduct: RequestHandler<{ id: string }> = async (
 ) => {
   const productId = req.params.id;
   if (!productId) {
-    res.status(404).json({
+    res.status(HttpStatus.NOT_FOUND).json({
       success: false,
       message: "Product ID not found",
     });
@@ -482,7 +483,7 @@ export const deleteProduct: RequestHandler<{ id: string }> = async (
   try {
     // soft deletion
     await Product.findByIdAndUpdate(productId, { isDeleted: true });
-    res.status(200).json({
+    res.status(HttpStatus.OK).json({
       success: true,
       message: "Product deleted successfully",
     });

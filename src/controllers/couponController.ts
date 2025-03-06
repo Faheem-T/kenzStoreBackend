@@ -1,3 +1,4 @@
+import { HttpStatus } from "../utils/httpenum";
 import mongoose from "mongoose";
 import { Cart } from "../models/cartModel";
 import { Coupon } from "../models/couponModel";
@@ -26,7 +27,7 @@ export const createCoupon: AdminRequestHandler<
   try {
     const foundCoupons = await Coupon.find({ code });
     if (foundCoupons.length > 0) {
-      res.status(400).json({
+      res.status(HttpStatus.BAD_REQUEST).json({
         success: false,
         message: "Coupon with the same code already exists!",
       });
@@ -43,7 +44,7 @@ export const createCoupon: AdminRequestHandler<
       minOrderAmount,
     });
 
-    res.status(200).json({
+    res.status(HttpStatus.OK).json({
       success: true,
       message: "Coupon has been created",
     });
@@ -61,7 +62,7 @@ export const deleteCoupon: AdminRequestHandler<{ couponId: string }> = async (
   const couponId = req.params.couponId;
 
   if (!couponId) {
-    res.status(400).json({
+    res.status(HttpStatus.BAD_REQUEST).json({
       success: false,
       message: "'couponId' is required",
     });
@@ -72,14 +73,14 @@ export const deleteCoupon: AdminRequestHandler<{ couponId: string }> = async (
       isDeleted: true,
     });
     if (!deletedCoupon) {
-      res.status(400).json({
+      res.status(HttpStatus.BAD_REQUEST).json({
         success: false,
         message: "Couldn't delete coupon",
       });
       return;
     }
 
-    res.status(200).json({
+    res.status(HttpStatus.OK).json({
       success: true,
       message: "Coupon deleted successfully",
     });
@@ -93,14 +94,14 @@ export const getAllCoupons: AdminRequestHandler = async (req, res, next) => {
   try {
     const foundCoupons = await Coupon.find({});
     if (!foundCoupons) {
-      res.status(400).json({
+      res.status(HttpStatus.BAD_REQUEST).json({
         success: false,
         message: "Couldn't get coupons",
       });
       return;
     }
 
-    res.status(200).json({
+    res.status(HttpStatus.OK).json({
       success: true,
       data: foundCoupons,
     });
@@ -118,7 +119,7 @@ export const updateCoupon: AdminRequestHandler<
   const couponId = req.params.couponId;
   const patch = req.body;
   if (!couponId) {
-    res.status(400).json({
+    res.status(HttpStatus.BAD_REQUEST).json({
       success: false,
       message: "'couponId' is required",
     });
@@ -130,13 +131,13 @@ export const updateCoupon: AdminRequestHandler<
       new: true,
     });
     if (!updatedCoupon) {
-      res.status(400).json({
+      res.status(HttpStatus.BAD_REQUEST).json({
         success: false,
         message: "Couldn't update coupon",
       });
       return;
     }
-    res.status(200).json({
+    res.status(HttpStatus.OK).json({
       success: true,
       message: "Coupon has been updated.",
     });
@@ -155,14 +156,14 @@ export const getApplicableCoupons: UserRequestHandler = async (
   try {
     const userCart = await Cart.findOne({ userId });
     if (!userCart) {
-      res.status(400).json({
+      res.status(HttpStatus.BAD_REQUEST).json({
         success: false,
         message: "Couldn't find cart",
       });
       return;
     }
     if (userCart.discountValue !== 0) {
-      res.status(200).json({
+      res.status(HttpStatus.OK).json({
         success: true,
         data: [],
         message: "A coupon is already applied",
@@ -194,7 +195,7 @@ export const getApplicableCoupons: UserRequestHandler = async (
         0;
       return userUsedCount < coupon.limitPerUser;
     });
-    res.status(200).json({
+    res.status(HttpStatus.OK).json({
       success: true,
       data: applicableCoupons,
     });
@@ -213,7 +214,7 @@ export const applyCouponToCart: UserRequestHandler<
   try {
     const cart = await Cart.findOne({ userId });
     if (!cart) {
-      res.status(400).json({
+      res.status(HttpStatus.BAD_REQUEST).json({
         success: false,
         message: "Cart not found!",
       });
@@ -228,7 +229,7 @@ export const applyCouponToCart: UserRequestHandler<
     });
 
     if (!coupon) {
-      res.status(400).json({
+      res.status(HttpStatus.BAD_REQUEST).json({
         success: false,
         message: "Couldn't find a valid coupon with that code",
       });
@@ -240,7 +241,7 @@ export const applyCouponToCart: UserRequestHandler<
       (id) => String(id) === userId
     ).length;
     if (userUsedCount >= coupon.limitPerUser) {
-      res.status(400).json({
+      res.status(HttpStatus.BAD_REQUEST).json({
         success: false,
         message: "Limit has been reached",
       });
@@ -257,7 +258,7 @@ export const applyCouponToCart: UserRequestHandler<
     coupon.totalUsedCount += 1;
     coupon.redeemedUsers.push(new mongoose.Types.ObjectId(userId));
     await coupon.save();
-    res.status(200).json({
+    res.status(HttpStatus.OK).json({
       success: true,
       message: "Coupon has bee applied successfully",
     });
@@ -275,7 +276,7 @@ export const deleteCouponFromCart: UserRequestHandler = async (
   try {
     const cart = await Cart.findOne({ userId });
     if (!cart) {
-      res.status(400).json({
+      res.status(HttpStatus.BAD_REQUEST).json({
         success: false,
         message: "Couldn't find cart",
       });
@@ -284,7 +285,7 @@ export const deleteCouponFromCart: UserRequestHandler = async (
 
     const coupon = await Coupon.findById(cart.coupon);
     if (!coupon) {
-      res.status(400).json({
+      res.status(HttpStatus.BAD_REQUEST).json({
         success: false,
         message: "Couldn't find applied coupon",
       });
@@ -304,7 +305,7 @@ export const deleteCouponFromCart: UserRequestHandler = async (
     cart.discountType = null;
     cart.discountValue = 0;
     await cart.save();
-    res.status(200).json({
+    res.status(HttpStatus.OK).json({
       message: "Coupon deleted successfully",
     });
   } catch (error) {

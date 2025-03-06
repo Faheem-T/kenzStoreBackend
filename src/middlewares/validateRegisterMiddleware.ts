@@ -1,5 +1,5 @@
+import { HttpStatus } from "../utils/httpenum";
 import { RequestHandler } from "express-serve-static-core";
-import { z } from "zod";
 import { User } from "../models/userModel";
 import { registerBodySchema, registerBodyType } from "../types/registerSchema";
 
@@ -15,7 +15,7 @@ export const validateRegisterMiddleware: RequestHandler<
 
     // check confirmation password
     if (password !== confirmPassword) {
-      res.status(400).json({
+      res.status(HttpStatus.BAD_REQUEST).json({
         success: false,
         name: "validationError",
         issues: [
@@ -31,7 +31,7 @@ export const validateRegisterMiddleware: RequestHandler<
     // check if email is already in use and that it is verified
     const foundUser = await User.findOne({ email, isVerified: true });
     if (foundUser) {
-      res.status(400).json({
+      res.status(HttpStatus.BAD_REQUEST).json({
         success: false,
         name: "validationError",
         issues: [{ field: "email", message: "Email is already in use!" }],

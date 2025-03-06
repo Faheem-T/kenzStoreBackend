@@ -1,3 +1,4 @@
+import { HttpStatus } from "../utils/httpenum";
 import { RequestHandler } from "express-serve-static-core";
 import { User } from "../models/userModel";
 import {
@@ -27,13 +28,20 @@ import {
 import { OTP } from "../models/otpModel";
 import { generateReferralCode } from "../utils/generateReferralCode";
 import { Wallet } from "../models/walletModel";
+import { retryPayment } from "./orderController";
+import { OAuth2Client } from "google-auth-library";
 
+const WEB_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const REFERRAL_REWARD_AMOUNT = 200;
+
+if (!WEB_CLIENT_ID) {
+  throw new Error("GOOGLE_CLIENT_ID not found. Set it in your .env");
+}
 
 export const getMe: RequestHandler = async (req, res, next) => {
   const refreshToken = req.cookies.refreshToken;
   if (!refreshToken) {
-    res.status(400).json({
+    res.status(HttpStatus.BAD_REQUEST).json({
       success: false,
       message: "Refresh token not found",
     });
@@ -48,7 +56,7 @@ export const getMe: RequestHandler = async (req, res, next) => {
     // checking if admin
     decoded = verifyAdminRefreshToken(refreshToken);
     if (!decoded) {
-      res.status(400).json({
+      res.status(HttpStatus.BAD_REQUEST).json({
         success: false,
         message: "Invalid refresh token",
       });
@@ -68,21 +76,20 @@ export const getMe: RequestHandler = async (req, res, next) => {
       const accessToken = generateAccessToken(id);
       const foundUser = await User.findById(id, { password: 0 });
       if (!foundUser) {
-        res.status(400).json({
+        res.status(HttpStatus.BAD_REQUEST).json({
           success: false,
           message: "User not found",
         });
         return;
       }
 
-      res.status(200).json({
+      res.status(HttpStatus.OK).json({
         success: true,
         data: {
           accessToken,
           user: {
             _id: foundUser._id,
-            firstName: foundUser.firstName,
-            lastName: foundUser.lastName,
+            name: foundUser.name,
             email: foundUser.email,
             id: foundUser.id,
             referralCode: foundUser.referralCode,
@@ -95,14 +102,14 @@ export const getMe: RequestHandler = async (req, res, next) => {
       const accessToken = generateAdminAccessToken(id);
       const foundAdmin = await Admin.findById(id, { password: 0 });
       if (!foundAdmin) {
-        res.status(400).json({
+        res.status(HttpStatus.BAD_REQUEST).json({
           success: false,
           message: "Admin not found",
         });
         return;
       }
 
-      res.status(200).json({
+      res.status(HttpStatus.OK).json({
         success: true,
         data: {
           accessToken,
@@ -131,7 +138,7 @@ export const postRegister: RequestHandler<any, any, registerBodyType> = async (
     return next(error);
   }
 
-  const { email, firstName, password, referralCode } = req.body;
+  const { email, name, password, referralCode } = req.body;
 
   let referredByUser;
   if (referralCode) {
@@ -139,7 +146,7 @@ export const postRegister: RequestHandler<any, any, registerBodyType> = async (
       referralCode: referralCode.toUpperCase(),
     });
     if (!referredByUser) {
-      res.status(400).json({
+      res.status(HttpStatus.BAD_REQUEST).json({
         success: false,
         issues: [{ field: "referralCode", message: "Invalid referral code" }],
       });
@@ -151,7 +158,7 @@ export const postRegister: RequestHandler<any, any, registerBodyType> = async (
 
   try {
     await User.create({
-      firstName,
+      name,
       email,
       password,
       referredBy: referredByUser ? referredByUser._id : null,
@@ -173,7 +180,7 @@ export const postRegister: RequestHandler<any, any, registerBodyType> = async (
 
   sendOTPtoMail(req.body.email, otp);
 
-  res.status(201).json({
+  res.status(HttpStatus.CREATED).json({
     success: true,
     message: "An OTP has been sent to your email",
   });
@@ -187,7 +194,7 @@ export const postVerifyOtp: RequestHandler = async (req, res, next) => {
       .sort({ createdAt: -1 })
       .exec();
     if (!foundOtp) {
-      res.status(400).json({
+      res.status(HttpStatus.BAD_REQUEST).json({
         success: false,
         message: "Wrong email",
       });
@@ -205,7 +212,7 @@ export const postVerifyOtp: RequestHandler = async (req, res, next) => {
       });
       // make sure user has not expired
       if (!foundUser) {
-        res.status(400).json({
+        res.status(HttpStatus.BAD_REQUEST).json({
           success: false,
           message: "Registration time exceeded. Please register again.",
         });
@@ -255,12 +262,12 @@ export const postVerifyOtp: RequestHandler = async (req, res, next) => {
         await userWallet.save();
       }
 
-      res.status(200).json({
+      res.status(HttpStatus.OK).json({
         success: true,
         message: "Email has been verified successfully! You may Log In now.",
       });
     } else {
-      res.status(400).json({
+      res.status(HttpStatus.BAD_REQUEST).json({
         success: false,
         message: "Invalid or Expired OTP",
       });
@@ -304,7 +311,7 @@ export const postResendOtp: RequestHandler = async (req, res, next) => {
     // send otp to users email
     sendOTPtoMail(email, otp);
 
-    res.status(200).json({
+    res.status(HttpStatus.OK).json({
       success: true,
       message: "OTP has been resent",
     });
@@ -324,16 +331,25 @@ export const postLogin: RequestHandler<any, any, loginBodyType> = async (
 
     // Check if email exists
     if (!foundUser) {
-      res.status(404).json({
+      res.status(HttpStatus.NOT_FOUND).json({
         success: false,
         message: "User not found",
       });
       return;
     }
 
+    // Check if user is a google logged in user
+    if (foundUser.isGoogleLogin) {
+      res.status(HttpStatus.BAD_REQUEST).json({
+        success: false,
+        message: "This account has been used to login using Google.",
+      });
+      return;
+    }
+
     // check if password is correct
     if (!validatePassword(password, foundUser.password)) {
-      res.status(400).json({
+      res.status(HttpStatus.BAD_REQUEST).json({
         success: false,
         message: "Wrong password",
       });
@@ -342,7 +358,7 @@ export const postLogin: RequestHandler<any, any, loginBodyType> = async (
 
     // check if user has been verified
     if (!foundUser.isVerified) {
-      res.status(400).json({
+      res.status(HttpStatus.BAD_REQUEST).json({
         success: false,
         message: "Your email has not been verified.",
       });
@@ -351,7 +367,7 @@ export const postLogin: RequestHandler<any, any, loginBodyType> = async (
 
     // check if user has been blocked
     if (foundUser.isBlocked) {
-      res.status(400).json({
+      res.status(HttpStatus.BAD_REQUEST).json({
         success: false,
         message: "You are currently blocked",
       });
@@ -360,18 +376,8 @@ export const postLogin: RequestHandler<any, any, loginBodyType> = async (
 
     // Generate refresh token
     const refreshToken = generateRefreshToken(foundUser.id);
-    // Decided not to use refresh token collection as Hariprasad (Reviewer)
-    // said that is not necessary
 
-    // Adding refresh token to database
-    // try {
-    //   await RefreshToken.create({ refreshToken, userId: foundUser._id });
-    // } catch (error) {
-    //   next(error);
-    //   return;
-    // }
-
-    // generate access token
+    // Generate access token
     const accessToken = generateAccessToken(foundUser.id);
 
     res
@@ -388,8 +394,7 @@ export const postLogin: RequestHandler<any, any, loginBodyType> = async (
         data: {
           accessToken,
           user: {
-            firstName: foundUser.firstName,
-            lastName: foundUser.lastName,
+            name: foundUser.name,
             email: foundUser.email,
             id: foundUser._id,
             referralCode: foundUser.referralCode,
@@ -405,7 +410,7 @@ export const postLogin: RequestHandler<any, any, loginBodyType> = async (
 export const getRefresh: RequestHandler = (req, res, next) => {
   const refreshToken = req.cookies?.refreshToken;
   if (!refreshToken) {
-    res.status(400).json({
+    res.status(HttpStatus.BAD_REQUEST).json({
       success: false,
       message: "Refresh token not found",
     });
@@ -415,14 +420,14 @@ export const getRefresh: RequestHandler = (req, res, next) => {
   const decoded = verifyRefreshToken(refreshToken);
   if (decoded) {
     const accessToken = generateAccessToken(decoded.userId);
-    res.status(200).json({
+    res.status(HttpStatus.OK).json({
       success: true,
       data: {
         accessToken,
       },
     });
   } else {
-    res.status(400).send();
+    res.status(HttpStatus.BAD_REQUEST).send();
   }
 };
 
@@ -440,7 +445,7 @@ export const postForgotPassword: RequestHandler = async (req, res, next) => {
   try {
     const foundUser = await User.findOne({ email }).exec();
     if (!foundUser) {
-      res.status(400).json({
+      res.status(HttpStatus.BAD_REQUEST).json({
         success: false,
         message: "Email not found",
       });
@@ -450,7 +455,7 @@ export const postForgotPassword: RequestHandler = async (req, res, next) => {
     const token = generateForgotPasswordJWT(email);
     sendPasswordResetLinktoEmail(email, token);
 
-    res.status(200).json({
+    res.status(HttpStatus.OK).json({
       success: true,
       message: "Password reset mail has been sent",
     });
@@ -462,13 +467,13 @@ export const postForgotPassword: RequestHandler = async (req, res, next) => {
 export const postResetPassword: RequestHandler = async (req, res, next) => {
   const { newPassword, token } = req.body;
   if (!newPassword) {
-    res.status(400).json({
+    res.status(HttpStatus.BAD_REQUEST).json({
       success: false,
       message: "New password is required",
     });
   }
   if (!token) {
-    res.status(400).json({
+    res.status(HttpStatus.BAD_REQUEST).json({
       success: false,
       message: "Token not found",
     });
@@ -477,7 +482,7 @@ export const postResetPassword: RequestHandler = async (req, res, next) => {
 
   const decoded = decodeForgotPasswordJWT(token);
   if (!decoded) {
-    res.status(400).json({
+    res.status(HttpStatus.BAD_REQUEST).json({
       success: false,
       message: "Invalid token. Please try again.",
     });
@@ -488,11 +493,137 @@ export const postResetPassword: RequestHandler = async (req, res, next) => {
   const hashedPassword = hashPassword(newPassword);
   try {
     await User.findOneAndUpdate({ email }, { password: hashedPassword });
-    res.status(200).json({
+    res.status(HttpStatus.OK).json({
       success: true,
       message: "Password has been reset successfully!",
     });
   } catch (error) {
     next(error);
+  }
+};
+
+export const googleLogin: RequestHandler<
+  {},
+  any,
+  { credential: string; g_csrf_token?: string }
+> = async (req, res, next) => {
+  const gToken = req.cookies.g_csrf_token;
+  if (!gToken) {
+    res
+      .status(400)
+      .json({ success: false, message: "NO CSRF token in cookie" });
+    return;
+  }
+  const gTokenBody = req.body.g_csrf_token;
+  if (!gTokenBody) {
+    res
+      .status(400)
+      .json({ success: false, message: "NO CSRF token in post body" });
+    return;
+  }
+  if (gToken !== gTokenBody) {
+    res.status(HttpStatus.BAD_REQUEST).json({
+      success: false,
+      message: "Failed to verify double submit cookie",
+    });
+    return;
+  }
+
+  const { credential } = req.body;
+
+  const client = new OAuth2Client();
+  try {
+    const ticket = await client.verifyIdToken({
+      idToken: credential,
+      audience: WEB_CLIENT_ID,
+    });
+    const payload = ticket.getPayload();
+    if (!payload) return;
+    // const userid = payload["sub"];
+    const email = payload["email"];
+
+    const foundUser = await User.findOne({ email }).exec();
+    if (foundUser) {
+      if (!foundUser.isGoogleLogin) {
+        res.status(HttpStatus.BAD_REQUEST).json({
+          success: false,
+          message:
+            "A local account already exists with this email. Please log in using email and password.",
+        });
+        return;
+      } else if (foundUser.isGoogleLogin) {
+        // Generate refresh token
+        const refreshToken = generateRefreshToken(foundUser.id);
+
+        // Generate access token
+        const accessToken = generateAccessToken(foundUser.id);
+
+        res
+          .cookie("refreshToken", refreshToken, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "strict",
+            path: "/",
+            maxAge: REFRESH_MAX_AGE * 1000, // since maxAge considers the values as milliseconds
+          })
+          .status(200)
+          .json({
+            success: true,
+            data: {
+              accessToken,
+              user: {
+                name: foundUser.name,
+                email: foundUser.email,
+                id: foundUser._id,
+                referralCode: foundUser.referralCode,
+              },
+            },
+          });
+        return;
+      }
+    }
+
+    const { name, picture } = payload;
+    // if a user is not found, create new user
+    const newUser = await User.create({
+      name,
+      email,
+      picture,
+      isGoogleLogin: true,
+    });
+
+    // Generate refresh token
+    const refreshToken = generateRefreshToken(newUser.id);
+
+    // Generate access token
+    const accessToken = generateAccessToken(newUser.id);
+
+    res
+      .cookie("refreshToken", refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+        path: "/",
+        maxAge: REFRESH_MAX_AGE * 1000, // since maxAge considers the values as milliseconds
+      })
+      .status(200)
+      .json({
+        success: true,
+        data: {
+          accessToken,
+          user: {
+            name: newUser.name,
+            email: newUser.email,
+            id: newUser._id,
+            referralCode: newUser.referralCode,
+          },
+        },
+      });
+    return;
+  } catch (error) {
+    console.error(error);
+    res
+      .status(400)
+      .json({ success: false, message: "That did not quite work bro..." });
   }
 };

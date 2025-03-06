@@ -1,10 +1,11 @@
+import { HttpStatus } from "../utils/httpenum";
 import { verifyAdminAccessToken } from "../utils/authJwtHelper";
 import { AdminRequestHandler } from "../types/authenticatedRequest";
 
 export const adminAccessMiddleware: AdminRequestHandler = (req, res, next) => {
   const accessToken = req.header("authorization")?.split(" ")[1];
   if (!accessToken) {
-    res.status(400).json({
+    res.status(HttpStatus.BAD_REQUEST).json({
       success: false,
       message: "Access Token not found.",
     });
@@ -15,7 +16,7 @@ export const adminAccessMiddleware: AdminRequestHandler = (req, res, next) => {
     req.adminId = decoded.adminId;
     next();
   } else {
-    res.status(401).json({
+    res.status(HttpStatus.UNAUTHORIZED).json({
       success: false,
       message: "Invalid/Expired access token",
     });

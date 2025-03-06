@@ -2,6 +2,7 @@ import { Address } from "../models/addressModel";
 import { UserRequestHandler } from "../types/authenticatedRequest";
 import { AddressType } from "../types/address";
 import { BaseResponse } from "../types/baseResponse";
+import { HttpStatus } from "../utils/httpenum";
 
 // GET addresses/user
 interface getUserResBody extends BaseResponse<AddressType[]> {}
@@ -13,7 +14,7 @@ export const getUserAddresses: UserRequestHandler<{}, getUserResBody> = async (
 ) => {
   const userId = req.userId;
   if (!userId) {
-    res.status(400).json({
+    res.status(HttpStatus.BAD_REQUEST).json({
       success: false,
       message: "User ID is required",
     });
@@ -22,13 +23,13 @@ export const getUserAddresses: UserRequestHandler<{}, getUserResBody> = async (
   try {
     const foundAddress = await Address.find({ userId });
     if (!foundAddress) {
-      res.status(400).json({
+      res.status(HttpStatus.BAD_REQUEST).json({
         success: false,
         message: "Address not found",
       });
       return;
     }
-    res.status(200).json({
+    res.status(HttpStatus.OK).json({
       success: true,
       data: foundAddress,
     });
@@ -41,7 +42,7 @@ export const getUserAddresses: UserRequestHandler<{}, getUserResBody> = async (
 export const postUserAddress: UserRequestHandler = async (req, res, next) => {
   const userId = req.userId;
   if (!userId) {
-    res.status(400).json({
+    res.status(HttpStatus.BAD_REQUEST).json({
       success: false,
       message: "User is not authenticated",
     });
@@ -49,7 +50,7 @@ export const postUserAddress: UserRequestHandler = async (req, res, next) => {
   }
   try {
     const createdAddress = await Address.create({ ...req.body, userId });
-    res.status(201).json({
+    res.status(HttpStatus.CREATED).json({
       success: true,
       message: "Address created successfully",
     });
@@ -65,7 +66,7 @@ export const setDefaultAddress: UserRequestHandler<{
   const addressId = req.params.addressId;
   const userId = req.userId as string;
   if (!addressId) {
-    res.status(400).json({
+    res.status(HttpStatus.BAD_REQUEST).json({
       success: false,
       message: "Address ID is required",
     });
@@ -89,13 +90,13 @@ export const setDefaultAddress: UserRequestHandler<{
       }
     );
     if (!updatedAddress) {
-      res.status(400).json({
+      res.status(HttpStatus.BAD_REQUEST).json({
         success: false,
         message: "Address not found",
       });
       return;
     }
-    res.status(200).json({
+    res.status(HttpStatus.OK).json({
       success: true,
       message: "Address set as default successfully",
     });
@@ -111,7 +112,7 @@ export const updateAddress: UserRequestHandler<{
   const addressId = req.params.addressId;
   const userId = req.userId;
   if (!addressId) {
-    res.status(400).json({
+    res.status(HttpStatus.BAD_REQUEST).json({
       success: false,
       message: "Address ID is required",
     });
@@ -124,13 +125,13 @@ export const updateAddress: UserRequestHandler<{
       { new: true }
     );
     if (!updatedAddress) {
-      res.status(400).json({
+      res.status(HttpStatus.BAD_REQUEST).json({
         success: false,
         message: "Address not found",
       });
       return;
     }
-    res.status(200).json({
+    res.status(HttpStatus.OK).json({
       success: true,
       message: "Address updated successfully",
     });
@@ -146,7 +147,7 @@ export const deleteAddress: UserRequestHandler<{
 }> = async (req, res, next) => {
   const addressId = req.params.addressId;
   if (!addressId) {
-    res.status(400).json({
+    res.status(HttpStatus.BAD_REQUEST).json({
       success: false,
       message: "Address ID is required",
     });
@@ -160,7 +161,7 @@ export const deleteAddress: UserRequestHandler<{
       userId,
     });
     if (!deletedAddress) {
-      res.status(400).json({
+      res.status(HttpStatus.BAD_REQUEST).json({
         success: false,
         message: "Address not found",
       });
@@ -168,7 +169,7 @@ export const deleteAddress: UserRequestHandler<{
     }
 
     console.log("Deleted Address: ", deletedAddress);
-    res.status(200).json({
+    res.status(HttpStatus.OK).json({
       success: true,
       message: "Address deleted successfully",
     });

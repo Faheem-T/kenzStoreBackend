@@ -1,3 +1,4 @@
+import { HttpStatus } from "../utils/httpenum";
 import mongoose from "mongoose";
 import { Wishlist } from "../models/wishlistModel";
 import { UserRequestHandler } from "../types/authenticatedRequest";
@@ -5,7 +6,7 @@ import { UserRequestHandler } from "../types/authenticatedRequest";
 export const getWishlist: UserRequestHandler = async (req, res, next) => {
   const userId = req.userId;
   if (!userId) {
-    res.status(400).json({
+    res.status(HttpStatus.BAD_REQUEST).json({
       success: false,
       message: "Authenticated users only",
     });
@@ -21,14 +22,14 @@ export const getWishlist: UserRequestHandler = async (req, res, next) => {
       wishlist = await Wishlist.create({ user: userId, products: [] });
     }
     if (!wishlist) {
-      res.status(400).json({
+      res.status(HttpStatus.BAD_REQUEST).json({
         success: false,
         message: "Couldn't find wishlist",
       });
       return;
     }
 
-    res.status(200).json({
+    res.status(HttpStatus.OK).json({
       success: true,
       data: wishlist.products,
     });
@@ -45,7 +46,7 @@ export const addToWishlist: UserRequestHandler<
   const userId = req.userId;
   const productId = req.body.productId;
   if (!userId) {
-    res.status(400).json({
+    res.status(HttpStatus.BAD_REQUEST).json({
       success: false,
       message: "Authenticated users only",
     });
@@ -53,7 +54,7 @@ export const addToWishlist: UserRequestHandler<
   }
 
   if (!productId) {
-    res.status(400).json({
+    res.status(HttpStatus.BAD_REQUEST).json({
       success: false,
       message: "'productId' is required",
     });
@@ -70,14 +71,14 @@ export const addToWishlist: UserRequestHandler<
       }
     );
     if (!updatedWishlist) {
-      res.status(400).json({
+      res.status(HttpStatus.BAD_REQUEST).json({
         success: false,
         message: "Error while adding to wishlist",
       });
       return;
     }
 
-    res.status(200).json({
+    res.status(HttpStatus.OK).json({
       success: true,
       message: "Added to wishlist successfully",
     });
@@ -94,7 +95,7 @@ export const removeFromWishlist: UserRequestHandler<
   const userId = req.userId;
   const productId = req.body.productId;
   if (!userId) {
-    res.status(401).json({
+    res.status(HttpStatus.UNAUTHORIZED).json({
       success: false,
       message: "Authenticated users only",
     });
@@ -102,7 +103,7 @@ export const removeFromWishlist: UserRequestHandler<
   }
 
   if (!productId) {
-    res.status(400).json({
+    res.status(HttpStatus.BAD_REQUEST).json({
       success: false,
       message: "'productId' is required",
     });
@@ -115,7 +116,7 @@ export const removeFromWishlist: UserRequestHandler<
       { $pull: { products: productId } }
     );
 
-    res.status(200).json({
+    res.status(HttpStatus.OK).json({
       success: true,
       message: "Product removed from wishlist successfully",
     });
@@ -127,7 +128,7 @@ export const removeFromWishlist: UserRequestHandler<
 export const clearWishlist: UserRequestHandler = async (req, res, next) => {
   const userId = req.userId;
   if (!userId) {
-    res.status(401).json({
+    res.status(HttpStatus.UNAUTHORIZED).json({
       success: false,
       message: "Authenticated users only",
     });
@@ -137,7 +138,7 @@ export const clearWishlist: UserRequestHandler = async (req, res, next) => {
   try {
     await Wishlist.findOneAndUpdate({ user: userId }, { products: [] });
 
-    res.status(200).json({
+    res.status(HttpStatus.OK).json({
       success: true,
       message: "Wishlist cleared successfully",
     });

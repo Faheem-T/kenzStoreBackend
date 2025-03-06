@@ -1,4 +1,5 @@
 import { Cart } from "../models/cartModel";
+import { HttpStatus } from "../utils/httpenum";
 import { Coupon } from "../models/couponModel";
 import { Product } from "../models/productModel";
 import { UserRequestHandler } from "../types/authenticatedRequest";
@@ -20,7 +21,7 @@ export const addProductToCart: UserRequestHandler<
     });
 
     if (!foundProduct) {
-      res.status(400).json({
+      res.status(HttpStatus.BAD_REQUEST).json({
         success: false,
         message: "Product not found",
       });
@@ -29,7 +30,7 @@ export const addProductToCart: UserRequestHandler<
 
     // make sure it is not deleted
     if (foundProduct.isDeleted) {
-      res.status(404).json({
+      res.status(HttpStatus.NOT_FOUND).json({
         success: false,
         message: "This product has been deleted",
       });
@@ -38,7 +39,7 @@ export const addProductToCart: UserRequestHandler<
 
     // make sure quantity is not more than stock
     if (foundProduct.stock < quantity) {
-      res.status(400).json({
+      res.status(HttpStatus.BAD_REQUEST).json({
         success: false,
         message: "Not enough stock",
       });
@@ -57,7 +58,7 @@ export const addProductToCart: UserRequestHandler<
         );
       }
       if (updatedCart) {
-        res.status(200).json({
+        res.status(HttpStatus.OK).json({
           success: true,
           message: "Product removed from cart",
         });
@@ -78,7 +79,7 @@ export const addProductToCart: UserRequestHandler<
       { new: true }
     );
     if (updatedCart) {
-      res.status(200).json({
+      res.status(HttpStatus.OK).json({
         success: true,
         message: "Product quantity updated in cart",
       });
@@ -97,14 +98,14 @@ export const addProductToCart: UserRequestHandler<
     );
 
     if (!updatedCart) {
-      res.status(400).json({
+      res.status(HttpStatus.BAD_REQUEST).json({
         success: false,
         message: "Failed to add product to cart",
       });
       return;
     }
 
-    res.status(200).json({
+    res.status(HttpStatus.OK).json({
       success: true,
       message: "Product added to cart successfully",
     });
@@ -123,7 +124,7 @@ export const getCart: UserRequestHandler = async (req, res, next) => {
       })
       .populate("coupon", "_id name code");
     if (!cart) {
-      res.status(400).json({
+      res.status(HttpStatus.BAD_REQUEST).json({
         success: false,
         message: "Cart not found",
       });
@@ -132,7 +133,7 @@ export const getCart: UserRequestHandler = async (req, res, next) => {
 
     console.log(cart);
 
-    res.status(200).json({
+    res.status(HttpStatus.OK).json({
       success: true,
       data: {
         _id: cart._id,
@@ -155,13 +156,13 @@ export const getMinimalCart: UserRequestHandler = async (req, res, next) => {
   try {
     const cart = await Cart.findOne({ userId });
     if (!cart) {
-      res.status(400).json({
+      res.status(HttpStatus.BAD_REQUEST).json({
         success: false,
         message: "Cart not found",
       });
       return;
     }
-    res.status(200).json({
+    res.status(HttpStatus.OK).json({
       success: true,
       data: cart,
     });
@@ -182,13 +183,13 @@ export const deleteProductFromCart: UserRequestHandler<{
       { new: true }
     );
     if (!updatedCart) {
-      res.status(400).json({
+      res.status(HttpStatus.BAD_REQUEST).json({
         success: false,
         message: "Item not found in cart",
       });
       return;
     }
-    res.status(200).json({
+    res.status(HttpStatus.OK).json({
       success: true,
       message: "Item removed from cart",
     });
@@ -203,7 +204,7 @@ export const clearCart: UserRequestHandler = async (req, res, next) => {
     const cart = await Cart.findOne({ userId });
 
     if (!cart) {
-      res.status(400).json({
+      res.status(HttpStatus.BAD_REQUEST).json({
         success: false,
         message: "Cart not found",
       });
@@ -222,7 +223,7 @@ export const clearCart: UserRequestHandler = async (req, res, next) => {
     }
     await cart.save();
 
-    res.status(200).json({
+    res.status(HttpStatus.OK).json({
       success: true,
       message: "Cart cleared successfully",
     });

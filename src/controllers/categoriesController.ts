@@ -1,3 +1,4 @@
+import { HttpStatus } from "../utils/httpenum";
 import { RequestHandler } from "express";
 import { Category } from "../models/categoryModel";
 import { populateCategory } from "../utils/populateCategoryHelper";
@@ -35,7 +36,7 @@ export const getCategoryProducts: RequestHandler<
   } = req.query;
   const slug = req.params.slug;
   if (!slug) {
-    res.status(400).json({
+    res.status(HttpStatus.BAD_REQUEST).json({
       success: false,
       message: "'slug' is required",
     });
@@ -55,7 +56,7 @@ export const getCategoryProducts: RequestHandler<
 
   const validSortFields = ["createdAt", "finalPrice", "name", "avgRating"];
   if (!validSortFields.includes(sortBy)) {
-    res.status(400).json({
+    res.status(HttpStatus.BAD_REQUEST).json({
       success: false,
       message: `Invalid sortBy Field. Allowed fields are: ${validSortFields.join(
         ", "
@@ -67,7 +68,7 @@ export const getCategoryProducts: RequestHandler<
   try {
     const foundCategory = await Category.findOne({ slug }).lean();
     if (!foundCategory) {
-      res.status(400).json({
+      res.status(HttpStatus.BAD_REQUEST).json({
         success: false,
         message: `Couldn't find category with slug ${slug}`,
       });
@@ -192,7 +193,7 @@ export const getCategoryProducts: RequestHandler<
       { $limit: limitNum },
     ]);
 
-    res.status(200).json({
+    res.status(HttpStatus.OK).json({
       success: true,
       data: {
         products: categoryProducts,
@@ -216,7 +217,7 @@ export const getCategory: RequestHandler<{ id: string }> = async (
       categoryProjection
     ).populate(populateCategory(1, "parentCategory"));
     // TODO check if `isDeleted` is true
-    res.status(200).json({
+    res.status(HttpStatus.OK).json({
       success: true,
       data: foundCategory,
     });
@@ -232,7 +233,7 @@ export const getCategories: RequestHandler = async (req, res, next) => {
       { isDeleted: { $ne: true } },
       categoryProjection
     ).populate(populateCategory(1, "parentCategory"));
-    res.status(200).json({
+    res.status(HttpStatus.OK).json({
       success: true,
       data: foundCategories,
     });
@@ -250,7 +251,7 @@ export const postCategory: RequestHandler<
     // TODO check if name already in use
 
     const createdCategory = await Category.create(req.body);
-    res.status(201).json({
+    res.status(HttpStatus.CREATED).json({
       success: true,
       data: createdCategory,
     });
@@ -273,7 +274,7 @@ export const deleteCategory: RequestHandler<{ id: string }> = async (
       isDeleted: true,
       isActive: false,
     });
-    res.status(200).json({
+    res.status(HttpStatus.OK).json({
       success: true,
       message: "Category Deleted",
     });
@@ -289,7 +290,7 @@ export const updateCategory: RequestHandler = async (req, res, next) => {
       categoryId,
       req.body
     );
-    res.status(200).json({
+    res.status(HttpStatus.OK).json({
       success: true,
       data: updatedCategory,
     });

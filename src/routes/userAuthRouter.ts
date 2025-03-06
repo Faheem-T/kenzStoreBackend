@@ -9,6 +9,7 @@ import {
   postResendOtp,
   postForgotPassword,
   postResetPassword,
+  googleLogin,
 } from "../controllers/userAuthController";
 import { validateRegisterMiddleware } from "../middlewares/validateRegisterMiddleware";
 
@@ -21,4 +22,5 @@ export const userAuthRouter = Router()
   .get("/refresh", getRefresh)
   .post("/logout", postLogout)
   .post("/forgot-password", postForgotPassword)
-  .post("/reset-password", postResetPassword);
+  .post("/reset-password", postResetPassword)
+  .post("/google-login", googleLogin);

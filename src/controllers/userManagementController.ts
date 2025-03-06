@@ -1,3 +1,4 @@
+import { HttpStatus } from "../utils/httpenum";
 import { RequestHandler } from "express";
 import { User } from "../models/userModel";
 
@@ -10,13 +11,13 @@ export const getUsers: RequestHandler = async (req, res, next) => {
   try {
     const foundUsers = await User.find({}, userProjection);
     if (!foundUsers) {
-      res.status(400).json({
+      res.status(HttpStatus.BAD_REQUEST).json({
         success: false,
         message: "Users not found",
       });
       return;
     }
-    res.status(200).json({
+    res.status(HttpStatus.OK).json({
       success: true,
       data: foundUsers,
     });
@@ -34,13 +35,13 @@ export const getUser: RequestHandler<{ userId: string }> = async (
   try {
     const foundUser = await User.findById(userId, userProjection);
     if (!foundUser) {
-      res.status(400).json({
+      res.status(HttpStatus.BAD_REQUEST).json({
         success: false,
         message: "User not found",
       });
       return;
     }
-    res.status(200).json({
+    res.status(HttpStatus.OK).json({
       success: true,
       data: foundUser,
     });
@@ -67,7 +68,7 @@ export const patchToggleBlockUser: RequestHandler<{ userId: string }> = async (
       { new: true, projection: userProjection }
     );
     if (!updatedUser) {
-      res.status(400).json({
+      res.status(HttpStatus.BAD_REQUEST).json({
         success: false,
         message: "User not found",
       });
@@ -79,7 +80,7 @@ export const patchToggleBlockUser: RequestHandler<{ userId: string }> = async (
       message = "User blocked successfully";
     }
 
-    res.status(200).json({
+    res.status(HttpStatus.OK).json({
       success: true,
       message,
       data: updatedUser,

@@ -1,3 +1,4 @@
+import { HttpStatus } from "../utils/httpenum";
 import { Order } from "../models/orderModel";
 import { AdminRequestHandler } from "../types/authenticatedRequest";
 import { BaseResponse } from "../types/baseResponse";
@@ -22,7 +23,7 @@ type SalesReportBody = BaseResponse<{
     | "completedAt"
     | "totalPrice"
     | "originalPrice"
-  > & { userId: { _id: string; firstName: string } })[];
+  > & { userId: { _id: string; name: string } })[];
   totalSalesCount: number;
   totalSaleAmount: number;
   orderCountByTimeframe: { _id: string; count: number }[];
@@ -43,7 +44,7 @@ export const getSalesReport: AdminRequestHandler<
     endDate: endDateString,
   } = req.query;
   if (!timeframes.includes(timeframe)) {
-    res.status(400).json({
+    res.status(HttpStatus.BAD_REQUEST).json({
       success: false,
       message: `invalid 'timeframe'. Allowed values are: ${timeframes.join(
         ", "
@@ -58,7 +59,7 @@ export const getSalesReport: AdminRequestHandler<
   if (startDateString) {
     startDate = new Date(startDateString);
     if (isNaN(startDate.getTime())) {
-      res.status(400).json({
+      res.status(HttpStatus.BAD_REQUEST).json({
         success: false,
         message: "Invalid start date",
       });
@@ -70,7 +71,7 @@ export const getSalesReport: AdminRequestHandler<
   if (endDateString) {
     endDate = new Date(endDateString);
     if (isNaN(endDate.getTime())) {
-      res.status(400).json({
+      res.status(HttpStatus.BAD_REQUEST).json({
         success: false,
         message: "Invalid end date",
       });
@@ -101,7 +102,7 @@ export const getSalesReport: AdminRequestHandler<
     const topSellingProducts = await getTopSellingProducts();
     const topSellingCategories = await getTopSellingCategories();
     const topSellingBrands = await getTopSellingBrands();
-    res.status(200).json({
+    res.status(HttpStatus.OK).json({
       success: true,
       data: {
         orders,
@@ -133,7 +134,7 @@ const generateSalesReport = async (completedAt: Record<string, Date>) => {
       | "completedAt"
       | "totalPrice"
       | "originalPrice"
-    > & { userId: { _id: string; firstName: string } }
+    > & { userId: { _id: string; name: string } }
   >(
     {
       status: "completed",
@@ -142,7 +143,7 @@ const generateSalesReport = async (completedAt: Record<string, Date>) => {
     "items coupon discountType discountValue paymentMethod status completedAt totalPrice originalPrice userId"
   )
     .sort({ completedAt: -1 })
-    .populate("userId", "firstName");
+    .populate("userId", "name");
   console.log(orders);
   const overallSalesCount = orders.length;
   const overallOrderAmount = orders.reduce(

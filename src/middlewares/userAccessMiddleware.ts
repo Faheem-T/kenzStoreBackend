@@ -1,3 +1,4 @@
+import { HttpStatus } from "../utils/httpenum";
 import { UserRequestHandler } from "../types/authenticatedRequest";
 import { verifyAccessToken } from "../utils/authJwtHelper";
 
@@ -8,7 +9,7 @@ export const userAccessMiddleware: UserRequestHandler = async (
 ) => {
   const accessToken = req.header("authorization")?.split(" ")[1];
   if (!accessToken) {
-    res.status(401).json({
+    res.status(HttpStatus.UNAUTHORIZED).json({
       success: false,
       message: "Access Token not found.",
     });
@@ -19,7 +20,7 @@ export const userAccessMiddleware: UserRequestHandler = async (
     req.userId = decoded.userId;
     next();
   } else {
-    res.status(401).json({
+    res.status(HttpStatus.UNAUTHORIZED).json({
       success: false,
       message: "Invalid/Expired access token",
     });

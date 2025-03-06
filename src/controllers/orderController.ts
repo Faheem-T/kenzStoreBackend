@@ -1,3 +1,4 @@
+import { HttpStatus } from "../utils/httpenum";
 import { configDotenv } from "dotenv";
 configDotenv();
 import { validatePaymentVerification } from "razorpay/dist/utils/razorpay-utils";
@@ -67,7 +68,7 @@ export const placeOrder: UserRequestHandler<
   const userId = req.userId;
 
   if (!userId) {
-    res.status(400).json({
+    res.status(HttpStatus.BAD_REQUEST).json({
       success: false,
       message: "User is not authenticated",
     });
@@ -86,7 +87,7 @@ export const placeOrder: UserRequestHandler<
 
     console.log("Order Placement ROrder: ", order.paymentOrder);
 
-    res.status(200).json({
+    res.status(HttpStatus.OK).json({
       success: true,
       data: { orderId: order.id, razorpayOrder: order.paymentOrder },
       message:
@@ -98,7 +99,7 @@ export const placeOrder: UserRequestHandler<
     });
   } catch (error) {
     if (error instanceof CartValidationError) {
-      res.status(400).json({
+      res.status(HttpStatus.BAD_REQUEST).json({
         success: false,
         message: error.message,
         errors: error.validationErrors,
@@ -334,7 +335,7 @@ export const cancelOrder: UserRequestHandler<{
   const orderId = req.params.orderId;
   const userId = req.userId;
   if (!orderId) {
-    res.status(400).json({
+    res.status(HttpStatus.BAD_REQUEST).json({
       success: false,
       message: "Order ID is required",
     });
@@ -343,7 +344,7 @@ export const cancelOrder: UserRequestHandler<{
 
   const order = await Order.findById(orderId);
   if (!order) {
-    res.status(404).json({
+    res.status(HttpStatus.NOT_FOUND).json({
       success: false,
       message: "Order not found",
     });
@@ -351,7 +352,7 @@ export const cancelOrder: UserRequestHandler<{
   }
 
   if (order.userId.toString() !== userId) {
-    res.status(403).json({
+    res.status(HttpStatus.FORBIDDEN).json({
       success: false,
       message: "You are not authorized to cancel this order",
     });
@@ -359,7 +360,7 @@ export const cancelOrder: UserRequestHandler<{
   }
 
   if (order.status === "cancelled" || order.status === "completed") {
-    res.status(400).json({
+    res.status(HttpStatus.BAD_REQUEST).json({
       success: false,
       message: "Order is already " + order.status,
     });
@@ -403,7 +404,7 @@ export const cancelOrder: UserRequestHandler<{
 
       await order.save();
 
-      res.status(200).json({
+      res.status(HttpStatus.OK).json({
         success: true,
         message:
           "Order has been cancelled successfully. Payment has been added to wallet.",
@@ -411,7 +412,7 @@ export const cancelOrder: UserRequestHandler<{
       return;
     }
     await order.save();
-    res.status(200).json({
+    res.status(HttpStatus.OK).json({
       success: true,
       message: "Order has been cancelled successfully",
     });
@@ -450,7 +451,7 @@ export const getAllUsersOrders: UserRequestHandler<
   }
 
   if (!validSortFields.includes(sortBy)) {
-    res.status(400).json({
+    res.status(HttpStatus.BAD_REQUEST).json({
       success: false,
       message: `Invalid sortBy Field. Allowed fields are: ${validSortFields.join(
         ", "
@@ -476,13 +477,13 @@ export const getAllUsersOrders: UserRequestHandler<
         >[];
       }>("items.productId", "name description images _id");
     if (!foundOrders) {
-      res.status(400).json({
+      res.status(HttpStatus.BAD_REQUEST).json({
         success: false,
         message: "Couldn't find orders",
       });
       return;
     }
-    res.status(200).json({
+    res.status(HttpStatus.OK).json({
       success: true,
       data: foundOrders,
       currentPage: pageNum,
@@ -499,7 +500,7 @@ export const getOrder: UserRequestHandler<{
   const orderId = req.params.orderId;
   const userId = req.userId;
   if (!orderId) {
-    res.status(400).json({
+    res.status(HttpStatus.BAD_REQUEST).json({
       success: false,
       message: "Order ID is required",
     });
@@ -508,14 +509,14 @@ export const getOrder: UserRequestHandler<{
   try {
     const foundOrder = await Order.findOne({ _id: orderId, userId });
     if (!foundOrder) {
-      res.status(400).json({
+      res.status(HttpStatus.BAD_REQUEST).json({
         success: false,
         message: "Could not find order",
       });
       return;
     }
 
-    res.status(200).json({
+    res.status(HttpStatus.OK).json({
       success: true,
       data: foundOrder,
     });
@@ -557,7 +558,7 @@ export const getAllOrders: AdminRequestHandler<
   }
 
   if (!validSortFields.includes(sortBy)) {
-    res.status(400).json({
+    res.status(HttpStatus.BAD_REQUEST).json({
       success: false,
       message: `Invalid sortBy Field. Allowed fields are: ${validSortFields.join(
         ", "
@@ -566,7 +567,7 @@ export const getAllOrders: AdminRequestHandler<
     return;
   }
   if (!adminId) {
-    res.status(403).json({
+    res.status(HttpStatus.FORBIDDEN).json({
       success: false,
       message: "Only admins can access this route",
     });
@@ -594,7 +595,7 @@ export const getAllOrders: AdminRequestHandler<
         >[];
       }>("items.productId", "name description images _id")
       .sort({ [sortBy]: sortOrder });
-    res.status(200).json({
+    res.status(HttpStatus.OK).json({
       success: true,
       data: foundOrders,
       currentPage: pageNum,
@@ -613,7 +614,7 @@ export const editOrder: AdminRequestHandler<
   const adminId = req.adminId as string;
   const orderId = req.params.orderId;
   if (!orderId) {
-    res.status(400).json({
+    res.status(HttpStatus.BAD_REQUEST).json({
       success: false,
       message: "Order ID is required",
     });
@@ -624,14 +625,14 @@ export const editOrder: AdminRequestHandler<
       new: true,
     });
     if (!updatedOrder) {
-      res.status(400).json({
+      res.status(HttpStatus.BAD_REQUEST).json({
         success: false,
         message: "Order not found",
       });
       return;
     }
 
-    res.status(200).json({
+    res.status(HttpStatus.OK).json({
       success: true,
       data: updatedOrder,
     });
@@ -647,7 +648,7 @@ export const editOrderStatus: AdminRequestHandler<
 > = async (req, res, next) => {
   const orderId = req.params.orderId;
   if (!orderId) {
-    res.status(400).json({
+    res.status(HttpStatus.BAD_REQUEST).json({
       success: false,
       message: "Order ID is required",
     });
@@ -655,7 +656,7 @@ export const editOrderStatus: AdminRequestHandler<
   }
   const { status } = req.body;
   if (!orderStatuses.includes(status)) {
-    res.status(400).json({
+    res.status(HttpStatus.BAD_REQUEST).json({
       success: false,
       message: `${status} is not a valid status. Valid order statuses: ${orderStatuses.join(
         ", "
@@ -667,7 +668,7 @@ export const editOrderStatus: AdminRequestHandler<
     const order = await Order.findById(orderId);
 
     if (!order) {
-      res.status(400).json({
+      res.status(HttpStatus.BAD_REQUEST).json({
         success: false,
         message: "Order not found",
       });
@@ -675,7 +676,7 @@ export const editOrderStatus: AdminRequestHandler<
     }
 
     if (order.status === "requesting return") {
-      res.status(400).json({
+      res.status(HttpStatus.BAD_REQUEST).json({
         success: false,
         message: `Order status is ${order.status}. Either approve or reject the request before changing order status.`,
       });
@@ -688,7 +689,7 @@ export const editOrderStatus: AdminRequestHandler<
     }
     await order.save();
 
-    res.status(200).json({
+    res.status(HttpStatus.OK).json({
       success: true,
       data: order,
     });
@@ -721,7 +722,7 @@ export const verifyPayment: UserRequestHandler<
   );
 
   if (!paymentVerified) {
-    res.status(400).json({
+    res.status(HttpStatus.BAD_REQUEST).json({
       success: false,
       message: "Payment is not verified",
     });
@@ -737,7 +738,7 @@ export const verifyPayment: UserRequestHandler<
       createdAt: -1,
     });
     if (!order) {
-      res.status(400).json({
+      res.status(HttpStatus.BAD_REQUEST).json({
         success: false,
         message: "Couldn't find order",
       });
@@ -745,7 +746,7 @@ export const verifyPayment: UserRequestHandler<
     }
     order.paymentStatus = "paid";
     await order.save();
-    res.status(200).json({
+    res.status(HttpStatus.OK).json({
       success: true,
       message: "Payment has been verified successfully",
     });
@@ -760,7 +761,7 @@ export const requestOrderReturn: UserRequestHandler<{
   const userId = req.userId;
   const orderId = req.params.orderId;
   if (!orderId) {
-    res.status(400).json({
+    res.status(HttpStatus.BAD_REQUEST).json({
       success: false,
       message: "'orderId' is required",
     });
@@ -773,14 +774,14 @@ export const requestOrderReturn: UserRequestHandler<{
       { new: true }
     );
     if (!order) {
-      res.status(400).json({
+      res.status(HttpStatus.BAD_REQUEST).json({
         success: false,
         message: "Couldn't find order",
       });
       return;
     }
 
-    res.status(200).json({
+    res.status(HttpStatus.OK).json({
       success: true,
       message: "Return of order has been requested",
     });
@@ -794,7 +795,7 @@ export const approveOrderReturn: AdminRequestHandler<{
 }> = async (req, res, next) => {
   const orderId = req.params.orderId;
   if (!orderId) {
-    res.status(400).json({
+    res.status(HttpStatus.BAD_REQUEST).json({
       success: false,
       message: "'orderId' is required",
     });
@@ -804,7 +805,7 @@ export const approveOrderReturn: AdminRequestHandler<{
   try {
     const order = await Order.findById(orderId);
     if (!order) {
-      res.status(400).json({
+      res.status(HttpStatus.BAD_REQUEST).json({
         success: false,
         message: "Order not found",
       });
@@ -832,7 +833,7 @@ export const approveOrderReturn: AdminRequestHandler<{
 
     await order.save();
 
-    res.status(200).json({
+    res.status(HttpStatus.OK).json({
       success: true,
       message:
         "Order has been marked as returned and payment has been refunded",
@@ -847,7 +848,7 @@ export const rejectOrderReturn: AdminRequestHandler<{
 }> = async (req, res, next) => {
   const orderId = req.params.orderId;
   if (!orderId) {
-    res.status(400).json({
+    res.status(HttpStatus.BAD_REQUEST).json({
       success: false,
       message: "'orderId' is required",
     });
@@ -857,7 +858,7 @@ export const rejectOrderReturn: AdminRequestHandler<{
   try {
     const order = await Order.findById(orderId);
     if (!order) {
-      res.status(400).json({
+      res.status(HttpStatus.BAD_REQUEST).json({
         success: false,
         message: "Order not found",
       });
@@ -868,7 +869,7 @@ export const rejectOrderReturn: AdminRequestHandler<{
 
     await order.save();
 
-    res.status(200).json({
+    res.status(HttpStatus.OK).json({
       success: true,
       message: "Order return request has been rejected",
     });
@@ -884,7 +885,7 @@ export const retryPayment: UserRequestHandler<{ orderId: string }> = async (
 ) => {
   const orderId = req.params.orderId;
   if (!orderId) {
-    res.status(400).json({
+    res.status(HttpStatus.BAD_REQUEST).json({
       success: false,
       message: "'orderId' is required",
     });
@@ -893,7 +894,7 @@ export const retryPayment: UserRequestHandler<{ orderId: string }> = async (
   try {
     const order = await Order.findById(orderId);
     if (!order) {
-      res.status(400).json({
+      res.status(HttpStatus.BAD_REQUEST).json({
         success: false,
         message: "Couldn't find order",
       });
@@ -901,7 +902,7 @@ export const retryPayment: UserRequestHandler<{ orderId: string }> = async (
     }
 
     if (order.paymentMethod === "cod") {
-      res.status(400).json({
+      res.status(HttpStatus.BAD_REQUEST).json({
         success: false,
         message: "Payment method is 'cod'",
       });
@@ -909,7 +910,7 @@ export const retryPayment: UserRequestHandler<{ orderId: string }> = async (
     }
 
     if (order.paymentStatus === "paid") {
-      res.status(400).json({
+      res.status(HttpStatus.BAD_REQUEST).json({
         success: false,
         message: "Payment has already been completed",
       });
@@ -920,7 +921,7 @@ export const retryPayment: UserRequestHandler<{ orderId: string }> = async (
     order.paymentOrder = ROrder;
     await order.save();
     console.log("Retry ROrder: ", ROrder);
-    res.status(200).json({
+    res.status(HttpStatus.OK).json({
       success: true,
       data: { razorpayOrder: ROrder },
     });

@@ -2,9 +2,9 @@ import z from "zod";
 
 // SHARED
 export const registerBodySchema = z.object({
-  firstName: z
+  name: z
     .string()
-    .nonempty("First name is required")
+    .nonempty("Name is required")
     .min(3, "Name cannot be less than 3 characters"),
   email: z
     .string()

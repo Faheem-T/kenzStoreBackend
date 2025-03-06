@@ -1,3 +1,4 @@
+import { HttpStatus } from "../utils/httpenum";
 import { Category } from "../models/categoryModel";
 import { Product } from "../models/productModel";
 import { AdminRequestHandler } from "../types/authenticatedRequest";
@@ -20,7 +21,7 @@ export const postNewProductOffer: AdminRequestHandler<
     req.body;
 
   if (!products) {
-    res.status(400).json({
+    res.status(HttpStatus.BAD_REQUEST).json({
       success: false,
       message: "'products' array not found",
     });
@@ -40,7 +41,7 @@ export const postNewProductOffer: AdminRequestHandler<
       {}
     );
 
-    res.status(200).json({
+    res.status(HttpStatus.OK).json({
       success: true,
       message: `Offer applied to ${updatedProducts.modifiedCount} products.`,
     });
@@ -57,7 +58,7 @@ export const postNewCategoryOffer: AdminRequestHandler<
   const { name, categories, startDate, endDate, discountType, discountValue } =
     req.body;
   if (!categories) {
-    res.status(400).json({
+    res.status(HttpStatus.BAD_REQUEST).json({
       success: false,
       message: "'categories' array not found.",
     });
@@ -75,7 +76,7 @@ export const postNewCategoryOffer: AdminRequestHandler<
         discountValue,
       }
     );
-    res.status(200).json({
+    res.status(HttpStatus.OK).json({
       success: true,
       message: `Offer applied to ${updatedCategories.modifiedCount} categories`,
     });
@@ -96,7 +97,7 @@ export const getAllOfferProducts: AdminRequestHandler = async (
       // discountEndDate: { $gt: new Date() },
       // discountStartDate: { $lt: new Date() },
     });
-    res.status(200).json({
+    res.status(HttpStatus.OK).json({
       success: true,
       data: foundProductOffers,
     });
@@ -117,7 +118,7 @@ export const getAllOfferCategories: AdminRequestHandler = async (
       // discountEndDate: { $gt: new Date() },
       // discountStartDate: { $lt: new Date() },
     });
-    res.status(200).json({
+    res.status(HttpStatus.OK).json({
       success: true,
       data: foundCategoryOffers,
     });
@@ -131,7 +132,7 @@ export const deleteProductOffer: AdminRequestHandler<{
 }> = async (req, res, next) => {
   const productId = req.params.productId;
   if (!productId) {
-    res.status(400).json({
+    res.status(HttpStatus.BAD_REQUEST).json({
       success: false,
       message: "'productId' is required",
     });
@@ -151,13 +152,13 @@ export const deleteProductOffer: AdminRequestHandler<{
       { new: true }
     );
     if (!foundProduct) {
-      res.status(400).json({
+      res.status(HttpStatus.BAD_REQUEST).json({
         success: false,
         message: "Product not found",
       });
       return;
     }
-    res.status(200).json({
+    res.status(HttpStatus.OK).json({
       success: true,
       message: "Product offer deleted successfully",
     });
@@ -171,7 +172,7 @@ export const deleteCategoryOffer: AdminRequestHandler<{
 }> = async (req, res, next) => {
   const categoryId = req.params.categoryId;
   if (!categoryId) {
-    res.status(400).json({
+    res.status(HttpStatus.BAD_REQUEST).json({
       success: false,
       message: "'categoryId' is required",
     });
@@ -187,13 +188,13 @@ export const deleteCategoryOffer: AdminRequestHandler<{
       discountEndDate: null,
     });
     if (!foundCategory) {
-      res.status(400).json({
+      res.status(HttpStatus.BAD_REQUEST).json({
         success: false,
         message: "Category not found",
       });
       return;
     }
-    res.status(200).json({
+    res.status(HttpStatus.OK).json({
       success: true,
       message: "Category offer deleted successfully",
     });

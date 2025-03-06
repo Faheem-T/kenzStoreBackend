@@ -1,3 +1,4 @@
+import { HttpStatus } from "../utils/httpenum";
 import { RequestHandler } from "express";
 import { User } from "../models/userModel";
 
@@ -13,17 +14,16 @@ export const handlePatchUserProfile: RequestHandler = async (
       new: true,
     });
     if (!updatedUser) {
-      res.status(404).json({
+      res.status(HttpStatus.NOT_FOUND).json({
         success: false,
         message: "User not found",
       });
       return;
     }
-    res.status(200).json({
+    res.status(HttpStatus.OK).json({
       success: true,
       data: {
-        firstName: updatedUser.firstName,
-        lastName: updatedUser.lastName,
+        name: updatedUser.name,
         email: updatedUser.email,
       },
     });

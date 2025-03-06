@@ -1,3 +1,4 @@
+import { HttpStatus } from "../utils/httpenum";
 import { RequestHandler } from "express";
 import { Review } from "../models/reviewModel";
 import { postProductReviewBodyType } from "../types/requestBodyTypes";
@@ -12,7 +13,7 @@ export const getReview: RequestHandler<{ id: string }> = async (
   const reviewId = req.params.id;
   try {
     const foundReview = await Review.findById(reviewId);
-    res.status(200).json({
+    res.status(HttpStatus.OK).json({
       success: true,
       data: foundReview,
     });
@@ -27,7 +28,7 @@ export const getProductReviews: UserRequestHandler<{
   const { productId } = req.params;
 
   if (!productId) {
-    res.status(400).json({
+    res.status(HttpStatus.BAD_REQUEST).json({
       success: false,
       message: "Product ID is required",
     });
@@ -36,11 +37,11 @@ export const getProductReviews: UserRequestHandler<{
 
   try {
     const productReviews = await Review.find({ productId }).populate("userId", {
-      firstName: 1,
+      name: 1,
     });
 
     if (!productReviews.length) {
-      res.status(400).json({
+      res.status(HttpStatus.BAD_REQUEST).json({
         success: false,
         message: "No reviews found",
       });
@@ -55,7 +56,7 @@ export const getProductReviews: UserRequestHandler<{
     );
     const averageRating = Math.round((totalRating / ratingsCount) * 100) / 100;
 
-    res.status(200).json({
+    res.status(HttpStatus.OK).json({
       success: true,
       data: {
         ratingsCount,
@@ -81,7 +82,7 @@ export const postProductReview: UserRequestHandler<
   const { productId } = req.params;
 
   if (!productId) {
-    res.status(400).json({
+    res.status(HttpStatus.BAD_REQUEST).json({
       success: false,
       message: "Product ID is required",
     });
@@ -97,7 +98,7 @@ export const postProductReview: UserRequestHandler<
     // also update product
     const updatedProduct = await Product.findById(productId);
     if (!updatedProduct) {
-      res.status(400).json({
+      res.status(HttpStatus.BAD_REQUEST).json({
         success: false,
         message: "Product not found",
       });
@@ -113,7 +114,7 @@ export const postProductReview: UserRequestHandler<
     updatedProduct.ratingsCount = ratingsCount + 1;
     await updatedProduct.save();
 
-    res.status(201).json({
+    res.status(HttpStatus.CREATED).json({
       success: true,
       data: createdReview,
     });

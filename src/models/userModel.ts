@@ -5,16 +5,13 @@ export type IUser = UserType & mongoose.Document;
 
 const userSchema = new mongoose.Schema<IUser>(
   {
-    firstName: {
+    name: {
       type: String,
       required: true,
     },
-    lastName: { type: String },
     email: { type: String, required: true },
-    DOB: { type: Date },
     password: {
       type: String,
-      required: true,
     },
     isVerified: {
       type: Boolean,
@@ -37,6 +34,14 @@ const userSchema = new mongoose.Schema<IUser>(
     referredBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
+    },
+    picture: {
+      type: String,
+      default: null,
+    },
+    isGoogleLogin: {
+      type: Boolean,
+      default: false,
     },
   },
   { timestamps: true }

@@ -1,23 +1,31 @@
 import mongoose from "mongoose";
 
 // SHARED TYPE: Sync with frontend
-export interface UserType {
+export type UserType = {
   _id: string;
-  firstName: string;
-  lastName?: string;
+  name: string;
   email: string;
-  DOB?: Date;
-  password: string;
+  picture: string | null;
+
   // user verification fields
   expiresAt: Date | null;
   isVerified: boolean;
   isBlocked: boolean;
+
+  // referral fields
   referralCode: string;
   referredBy: mongoose.Types.ObjectId;
+
   // timestamp fields
   createdAt: Date;
   updatedAt: Date;
-}
+} & (
+  | {
+      password: string;
+      isGoogleLogin: false;
+    }
+  | { isGoogleLogin: true }
+); // Google login users will not have a password field
 
 // SHARED TYPE: Sync with frontend
 // without the password
