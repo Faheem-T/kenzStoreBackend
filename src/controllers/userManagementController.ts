@@ -1,6 +1,11 @@
 import { HttpStatus } from "../utils/httpenum";
 import { RequestHandler } from "express";
 import { User } from "../models/userModel";
+import { AdminRequestHandler } from "../types/authenticatedRequest";
+import { Wallet } from "../models/walletModel";
+import { Cart } from "../models/cartModel";
+import { Address } from "../models/addressModel";
+import { Wishlist } from "../models/wishlistModel";
 
 const userProjection = {
   password: 0,
@@ -85,6 +90,27 @@ export const patchToggleBlockUser: RequestHandler<{ userId: string }> = async (
       message,
       data: updatedUser,
     });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Purge user
+export const purgeUser: AdminRequestHandler<{ userId: string }> = async (
+  req,
+  res,
+  next
+) => {
+  const userId = req.params.userId;
+  try {
+    await User.findByIdAndDelete(userId);
+    await Wallet.deleteMany({ userId });
+    await Cart.deleteMany({ userId });
+    await Address.deleteMany({ userId });
+    await Wishlist.deleteMany({ userId });
+    res
+      .status(HttpStatus.OK)
+      .json({ success: true, message: "User has been purged" });
   } catch (error) {
     next(error);
   }

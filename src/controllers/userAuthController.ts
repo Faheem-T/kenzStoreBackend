@@ -188,15 +188,15 @@ export const postRegister: RequestHandler<any, any, registerBodyType> = async (
 
 export const postVerifyOtp: RequestHandler = async (req, res, next) => {
   const { otp, email } = req.body;
+  console.log(email);
 
   try {
-    const foundOtp = await OTP.findOneAndDelete({ email }) // Deleting the OTP after finding it
-      .sort({ createdAt: -1 })
-      .exec();
+    const foundOtp = await OTP.findOne({ email }).exec();
+
     if (!foundOtp) {
       res.status(HttpStatus.BAD_REQUEST).json({
         success: false,
-        message: "Wrong email",
+        message: "Wrong OTP",
       });
       return;
     }
@@ -222,6 +222,9 @@ export const postVerifyOtp: RequestHandler = async (req, res, next) => {
       foundUser.isVerified = true;
       foundUser.expiresAt = null;
       await foundUser.save();
+
+      // Delete otp after verification
+      await OTP.findByIdAndDelete(foundOtp._id);
 
       // Check for referral and update wallet for referrer and this user
       if (foundUser.referredBy) {
@@ -299,8 +302,8 @@ export const postResendOtp: RequestHandler = async (req, res, next) => {
     return;
   }
   try {
-    // delete previous OTP
-    await OTP.findOneAndDelete({ email });
+    // delete previous OTPs
+    await OTP.deleteMany({ email });
 
     // generate new OTP
     const otp = generateOtp();
