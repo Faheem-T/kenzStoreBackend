@@ -20,3 +20,10 @@ export type AdminRequestHandler<
   reqBody = {},
   Q = {}
 > = RequestHandler<P, resBody, reqBody, Q, AdminRequest>;
+
+export type GeneralRequestHandler<
+  P = {},
+  resBody = {},
+  reqBody = {},
+  Q = {}
+> = RequestHandler<P, resBody, reqBody, Q, AdminRequest | UserRequest>;

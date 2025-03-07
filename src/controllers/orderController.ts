@@ -5,11 +5,13 @@ import { validatePaymentVerification } from "razorpay/dist/utils/razorpay-utils"
 import { Wallet } from "../models/walletModel";
 import {
   AdminRequestHandler,
+  GeneralRequestHandler,
   UserRequestHandler,
 } from "../types/authenticatedRequest";
 import { Order } from "../models/orderModel";
 import {
   GetUserOrder,
+  OrderDetailsType,
   OrderStatus,
   orderStatuses,
   OrderType,
@@ -494,11 +496,16 @@ export const getAllUsersOrders: UserRequestHandler<
   }
 };
 
-export const getOrder: UserRequestHandler<{
-  orderId: string;
-}> = async (req, res, next) => {
+export const getOrder: GeneralRequestHandler<
+  {
+    orderId: string;
+  },
+  BaseResponse<OrderDetailsType>,
+  any
+> = async (req, res, next) => {
   const orderId = req.params.orderId;
   const userId = req.userId;
+  const adminId = req.adminId;
   if (!orderId) {
     res.status(HttpStatus.BAD_REQUEST).json({
       success: false,
@@ -506,8 +513,34 @@ export const getOrder: UserRequestHandler<{
     });
     return;
   }
+
+  let findQuery;
+  if (userId) {
+    findQuery = { _id: orderId, userId };
+  } else if (adminId) {
+    findQuery = { _id: orderId };
+  } else {
+    res
+      .status(HttpStatus.UNAUTHORIZED)
+      .json({ success: false, message: "Not authorized" });
+  }
+
   try {
-    const foundOrder = await Order.findOne({ _id: orderId, userId });
+    const foundOrder = await Order.findOne(findQuery)
+      .populate<{
+        items: ProductPopulatedItem<
+          Pick<
+            ProductType,
+            "name" | "description" | "images" | "_id" | "effectiveDiscount"
+          >
+        >[];
+      }>("items.productId", "name description images _id")
+      .populate<{
+        coupon: Pick<
+          CouponType,
+          "_id" | "name" | "code" | "discountType" | "discountValue"
+        >;
+      }>("coupon", "_id name code discountType discountValue");
     if (!foundOrder) {
       res.status(HttpStatus.BAD_REQUEST).json({
         success: false,

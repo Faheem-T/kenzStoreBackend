@@ -3,6 +3,7 @@ import { AddressType } from "./address";
 import { ProductPopulatedItem } from "./item";
 import { ProductType } from "./product";
 import { Orders } from "razorpay/dist/types/orders";
+import { CouponType } from "./coupon";
 
 // SHARED TYPE: Sync with frontend
 export interface OrderType {
@@ -69,10 +70,18 @@ export const orderStatuses = [
 ] as const;
 export type OrderStatus = (typeof orderStatuses)[number];
 
-// SHARED TYPE: Sync with frontend
+// SHARED
 export type GetUserOrder = ProductPopulatedOrderType<
   Pick<
     ProductType,
     "name" | "description" | "images" | "_id" | "effectiveDiscount"
   >
 >;
+
+// SHARED
+export type OrderDetailsType = Omit<GetUserOrder, "coupon"> & {
+  coupon: Pick<
+    CouponType,
+    "_id" | "name" | "code" | "discountType" | "discountValue"
+  >;
+};

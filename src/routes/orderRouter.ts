@@ -15,6 +15,7 @@ import {
   verifyPayment,
 } from "../controllers/orderController";
 import { adminAccessMiddleware } from "../middlewares/adminAccessMiddleware";
+import { generalAccessMiddleware } from "../middlewares/generalAccessMiddleware";
 
 // v1/orders
 export const orderRouter = Router()
@@ -36,6 +37,6 @@ export const orderRouter = Router()
   ) // Admin only
   .get("/", userAccessMiddleware, getAllUsersOrders)
   .get("/admin", adminAccessMiddleware, getAllOrders) // Admin only
-  .get("/:orderId", userAccessMiddleware, getOrder)
+  .get("/:orderId", generalAccessMiddleware, getOrder)
   .patch("/admin/:orderId", adminAccessMiddleware, editOrder) // Admin only
   .patch("/admin/:orderId/status", adminAccessMiddleware, editOrderStatus); // Admin only
