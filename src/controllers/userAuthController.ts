@@ -593,6 +593,7 @@ export const googleLogin: RequestHandler<
       email,
       picture,
       isGoogleLogin: true,
+      isVerified: true,
     });
 
     // Generate refresh token
