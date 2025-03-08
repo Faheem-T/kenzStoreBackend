@@ -99,9 +99,12 @@ export const getSalesReport: AdminRequestHandler<
       startDate,
       endDate
     );
-    const topSellingProducts = await getTopSellingProducts();
-    const topSellingCategories = await getTopSellingCategories();
-    const topSellingBrands = await getTopSellingBrands();
+    const topSellingProducts = await getTopSellingProducts(startDate, endDate);
+    const topSellingCategories = await getTopSellingCategories(
+      startDate,
+      endDate
+    );
+    const topSellingBrands = await getTopSellingBrands(startDate, endDate);
     res.status(HttpStatus.OK).json({
       success: true,
       data: {
@@ -190,10 +193,17 @@ const getOrderCountByTimeframe = async (
   return result;
 };
 
-const getTopSellingProducts = async () => {
+const getTopSellingProducts = async (startDate?: Date, endDate?: Date) => {
+  const matchStage: any = { status: "completed" };
+  if (startDate) {
+    matchStage.completedAt = { $gte: startDate };
+  }
+  if (endDate) {
+    matchStage.completedAt = { ...matchStage.completedAt, $lte: endDate };
+  }
   const products = await Order.aggregate<{ _id: string; count: number }>([
     {
-      $match: { status: "completed" },
+      $match: matchStage,
     },
     {
       $unwind: "$items",
@@ -214,13 +224,20 @@ const getTopSellingProducts = async () => {
   return products;
 };
 
-const getTopSellingCategories = async () => {
+const getTopSellingCategories = async (startDate?: Date, endDate?: Date) => {
+  const matchStage: any = { status: "completed" };
+  if (startDate) {
+    matchStage.completedAt = { $gte: startDate };
+  }
+  if (endDate) {
+    matchStage.completedAt = { ...matchStage.completedAt, $lte: endDate };
+  }
   const category = await Order.aggregate<{
     _id: { name: string };
     count: number;
   }>([
     {
-      $match: { status: "completed" },
+      $match: matchStage,
     },
     {
       $unwind: "$items",
@@ -263,10 +280,17 @@ const getTopSellingCategories = async () => {
   return category;
 };
 
-const getTopSellingBrands = async () => {
+const getTopSellingBrands = async (startDate?: Date, endDate?: Date) => {
+  const matchStage: any = { status: "completed" };
+  if (startDate) {
+    matchStage.completedAt = { $gte: startDate };
+  }
+  if (endDate) {
+    matchStage.completedAt = { ...matchStage.completedAt, $lte: endDate };
+  }
   const category = await Order.aggregate<{ _id: string; count: number }>([
     {
-      $match: { status: "completed" },
+      $match: matchStage,
     },
     {
       $unwind: "$items",
