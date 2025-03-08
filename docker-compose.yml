@@ -23,8 +23,6 @@ services:
       dockerfile: Dockerfile
       target: production
     image: "faheem222/kenzstore:latest"
-    # environment:
-    #   - FRONTEND_URL=https://www.kenzstore.faheem-mb.com
     env_file: .env
     expose:
       - '3001'

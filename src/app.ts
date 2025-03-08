@@ -17,15 +17,13 @@ if (process.env.NODE_ENV === "development") {
   app.use(morgan("dev"));
 }
 
-console.log(process.env.FRONTEND_URL);
 app.use(
   cors({
     credentials: true,
-    // origin:
-    //   process.env.NODE_ENV === "production"
-    //     ? "https://www.kenzstore.faheem-mb.com"
-    //     : "http://localhost:5173",
-    origin: process.env.FRONTEND_URL,
+    origin:
+      process.env.NODE_ENV === "development"
+        ? process.env.DEV_FRONTEND_URL
+        : process.env.FRONTEND_URL,
   })
 );
 app.use(Express.json());
